@@ -183,6 +183,10 @@ export class PostgresStorage implements IStorage {
   }
 
   async deleteEvent(id: string): Promise<void> {
+    // First delete all performances associated with this event
+    await db.delete(performances).where(eq(performances.eventId, id));
+    
+    // Then delete the event itself
     await db.delete(events).where(eq(events.id, id));
   }
 
