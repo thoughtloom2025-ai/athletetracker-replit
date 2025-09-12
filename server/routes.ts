@@ -8,6 +8,16 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
+  // Health check endpoint for deployment verification
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // Basic API status endpoint  
+  app.get('/api', (_req, res) => {
+    res.status(200).json({ status: 'ok', message: 'API is running' });
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
