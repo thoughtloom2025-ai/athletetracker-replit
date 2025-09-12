@@ -1,2 +1,5 @@
-// Re-export from memory storage implementation  
-export * from "./memory-storage";
+// Re-export from Supabase storage implementation  
+export * from "./supabase-storage";
+
+// Export the storage instance
+export { supabaseStorage as storage } from "./supabase-storage";
