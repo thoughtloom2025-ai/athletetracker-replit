@@ -147,8 +147,9 @@ export default function Attendance() {
     setSelectedDate(date);
   };
 
-  const formatSelectedDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
+  const formatSelectedDate = (date: Date | null) => {
+    const validDate = date instanceof Date ? date : new Date();
+    return validDate.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
@@ -223,7 +224,7 @@ export default function Attendance() {
           <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                Mark Attendance for {selectedDate ? formatSelectedDate(selectedDate) : 'Today'}
+                Mark Attendance for {selectedDate ? formatSelectedDate(selectedDate) : formatSelectedDate(new Date())}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
