@@ -115,10 +115,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventData = insertEventSchema.parse(requestData);
       const event = await storage.createEvent(eventData);
       res.json(event);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating event:", error);
-      if (error.errors) {
-        console.error("Validation errors:", error.errors);
+      const errorObj = error as { errors?: unknown };
+      if (errorObj.errors) {
+        console.error("Validation errors:", errorObj.errors);
       }
       res.status(400).json({ message: "Failed to create event" });
     }

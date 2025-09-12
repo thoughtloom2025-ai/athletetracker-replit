@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, 
@@ -18,10 +19,11 @@ import {
   Eye,
   Clock,
   Trophy,
-  FileText
+  FileText,
+  Trash2
 } from "lucide-react";
 import { EventForm } from "@/components/EventForm";
-import type { Event } from "@shared/schema";
+import type { Event, Student, Performance } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -37,9 +39,23 @@ export default function Events() {
   const [dateFilter, setDateFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [resultsDialogOpen, setResultsDialogOpen] = useState(false);
+  const [selectedEventResults, setSelectedEventResults] = useState<{
+    event: Event;
+    rankings: Array<{
+      student: Student;
+      bestPerformance: string;
+      rank: number;
+    }>;
+  } | null>(null);
 
   const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: students = [] } = useQuery<Student[]>({
+    queryKey: ["/api/students"],
     enabled: isAuthenticated,
   });
 
@@ -69,6 +85,37 @@ export default function Events() {
       toast({
         title: "Error",
         description: "Failed to start event. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: string) => {
+      await apiRequest("DELETE", `/api/events/${eventId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Event deleted",
+        description: "Event has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete event. Please try again.",
         variant: "destructive",
       });
     },
@@ -119,6 +166,148 @@ export default function Events() {
 
   const handleRecordEvent = (eventId: string) => {
     setLocation(`/events/${eventId}/record`);
+  };
+
+  const handleDeleteEvent = (eventId: string, eventName: string) => {
+    if (window.confirm(`Are you sure you want to delete the event "${eventName}"? This action cannot be undone.`)) {
+      deleteEventMutation.mutate(eventId);
+    }
+  };
+
+  const calculateRankings = (event: Event, performances: Performance[], students: Student[]) => {
+    // Group performances by student and get their best performance
+    const studentPerformances = new Map<string, Performance[]>();
+    
+    // Filter out performances with null or empty measurements
+    const validPerformances = performances.filter(p => p.measurement && p.measurement.trim());
+    
+    validPerformances.forEach(performance => {
+      if (!studentPerformances.has(performance.studentId)) {
+        studentPerformances.set(performance.studentId, []);
+      }
+      studentPerformances.get(performance.studentId)!.push(performance);
+    });
+
+    const rankings: Array<{
+      student: Student;
+      bestPerformance: string;
+      numericValue: number;
+    }> = [];
+    
+    // Use forEach instead of for...of to avoid MapIterator ES target error
+    studentPerformances.forEach((studentPerfs: Performance[], studentId: string) => {
+      const student = students.find(s => s.id === studentId);
+      if (!student || studentPerfs.length === 0) return;
+      
+      // Get best performance based on event type
+      let bestPerformance: Performance;
+      
+      if (event.type === "running") {
+        // For running, lower time is better
+        bestPerformance = studentPerfs.reduce<Performance>((best: Performance, current: Performance) => {
+          const bestMeasurement = best.measurement || "999999";
+          const currentMeasurement = current.measurement || "999999";
+          const bestTime = parseFloat(bestMeasurement.replace(/[^0-9.]/g, ''));
+          const currentTime = parseFloat(currentMeasurement.replace(/[^0-9.]/g, ''));
+          return currentTime < bestTime ? current : best;
+        }, studentPerfs[0]);
+      } else {
+        // For jumps and throws, higher distance is better
+        bestPerformance = studentPerfs.reduce<Performance>((best: Performance, current: Performance) => {
+          const bestMeasurement = best.measurement || "0";
+          const currentMeasurement = current.measurement || "0";
+          const bestDistance = parseFloat(bestMeasurement.replace(/[^0-9.]/g, ''));
+          const currentDistance = parseFloat(currentMeasurement.replace(/[^0-9.]/g, ''));
+          return currentDistance > bestDistance ? current : best;
+        }, studentPerfs[0]);
+      }
+      
+      // Ensure bestPerformance.measurement is not null
+      const measurementValue = bestPerformance.measurement || "0";
+      
+      rankings.push({
+        student,
+        bestPerformance: measurementValue,
+        numericValue: parseFloat(measurementValue.replace(/[^0-9.]/g, '')),
+      });
+    });
+    
+    // Sort rankings based on event type
+    if (event.type === "running") {
+      rankings.sort((a, b) => a.numericValue - b.numericValue); // Lower is better for running
+    } else {
+      rankings.sort((a, b) => b.numericValue - a.numericValue); // Higher is better for distance/height
+    }
+    
+    // Add rank numbers
+    return rankings.map((ranking, index) => ({
+      ...ranking,
+      rank: index + 1,
+    }));
+  };
+
+  const handleViewResults = async (event: Event) => {
+    try {
+      // Fetch performances for this event
+      const performances = await queryClient.fetchQuery<Performance[]>({
+        queryKey: ["/api/performances/event", event.id],
+      });
+      
+      const rankings = calculateRankings(event, performances, students);
+      
+      setSelectedEventResults({
+        event,
+        rankings,
+      });
+      setResultsDialogOpen(true);
+    } catch (error: unknown) {
+      toast({
+        title: "Error",
+        description: "Failed to load event results. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleShareResults = async (event: Event, rankings: Array<{ student: Student; bestPerformance: string; rank: number }>) => {
+    const resultText = `${event.name} Results\n\n` +
+      rankings.map(r => `${r.rank}. ${r.student.name} - ${r.bestPerformance}`).join('\n') +
+      `\n\nEvent: ${(event.type || "").replace('_', ' ')}\n` +
+      `Date: ${new Date(event.date).toLocaleDateString()}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${event.name} - Results`,
+          text: resultText,
+        });
+      } catch (error: unknown) {
+        // User cancelled the share
+        const errorObj = error as { name?: string };
+        if (errorObj.name !== 'AbortError') {
+          toast({
+            title: "Share failed",
+            description: "Failed to share results. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(resultText);
+        toast({
+          title: "Results copied",
+          description: "Results have been copied to your clipboard.",
+        });
+      } catch (error: unknown) {
+        toast({
+          title: "Copy failed",
+          description: "Failed to copy results to clipboard. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const handleCloseDialog = () => {
@@ -196,6 +385,85 @@ export default function Events() {
               event={editingEvent} 
               onClose={handleCloseDialog}
             />
+          </DialogContent>
+        </Dialog>
+
+        {/* Results Dialog */}
+        <Dialog open={resultsDialogOpen} onOpenChange={setResultsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedEventResults?.event.name} - Results
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedEventResults && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Badge className="bg-primary/10 text-primary">
+                      {(selectedEventResults.event.type || "").replace('_', ' ')}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(selectedEventResults.event.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <Button 
+                    onClick={() => handleShareResults(selectedEventResults.event, selectedEventResults.rankings)}
+                    data-testid="button-share-results-modal"
+                  >
+                    <Share className="h-4 w-4 mr-2" />
+                    Share Results
+                  </Button>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Rank</TableHead>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Best Performance</TableHead>
+                      <TableHead className="w-16">
+                        <Trophy className="h-4 w-4" />
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedEventResults.rankings.map((ranking) => (
+                      <TableRow key={ranking.student.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            {ranking.rank === 1 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                            {ranking.rank === 2 && <div className="w-4 h-4 rounded-full bg-gray-400"></div>}
+                            {ranking.rank === 3 && <div className="w-4 h-4 rounded-full bg-amber-600"></div>}
+                            <span>{ranking.rank}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {ranking.student.name}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {ranking.bestPerformance}
+                        </TableCell>
+                        <TableCell>
+                          {ranking.rank <= 3 && (
+                            <Badge variant={ranking.rank === 1 ? "default" : "secondary"}>
+                              {ranking.rank === 1 ? "1st" : ranking.rank === 2 ? "2nd" : "3rd"}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                {selectedEventResults.rankings.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No performance data available for this event.
+                  </div>
+                )}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -328,23 +596,27 @@ export default function Events() {
                       Edit
                     </Button>
                     
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDeleteEvent(event.id, event.name)}
+                      disabled={deleteEventMutation.isPending}
+                      data-testid={`button-delete-event-${event.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                    
                     {event.status === "completed" ? (
                       <>
                         <Button 
                           variant="outline" 
                           size="sm"
+                          onClick={() => handleViewResults(event)}
                           data-testid={`button-view-results-${event.id}`}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View Results
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          data-testid={`button-share-results-${event.id}`}
-                        >
-                          <Share className="h-4 w-4 mr-1" />
-                          Share
                         </Button>
                       </>
                     ) : event.status === "in_progress" ? (
@@ -371,7 +643,7 @@ export default function Events() {
                 </div>
 
                 {/* Additional event info for completed events */}
-                {event.status === "completed" && event.results && (
+                {event.status === "completed" && event.results !== null && (
                   <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex items-center space-x-2 text-sm text-secondary">
                       <Trophy className="h-4 w-4" />

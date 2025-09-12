@@ -14,7 +14,8 @@ import {
   Trophy, 
   Timer,
   Target,
-  Users
+  Users,
+  CheckCircle
 } from "lucide-react";
 import type { Event, Student, Performance } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -85,6 +86,39 @@ export default function RecordPerformance({ eventId }: RecordPerformanceProps) {
     },
   });
 
+  const finishEventMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PUT", `/api/events/${eventId}`, { status: "completed" });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Event finished",
+        description: "Event has been marked as completed successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setLocation("/events");
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to finish event. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle unauthorized access
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -137,6 +171,24 @@ export default function RecordPerformance({ eventId }: RecordPerformanceProps) {
       measurement: measurement.trim(),
       round: currentRound,
     });
+  };
+
+  const handleFinishEvent = () => {
+    // Check if there are any performance records for this event
+    const hasPerformances = existingPerformances.length > 0;
+    
+    if (!hasPerformances) {
+      toast({
+        title: "No performances recorded",
+        description: "Please record at least one student's performance before finishing the event.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (window.confirm("Are you sure you want to finish this event? This will mark it as completed and calculate final rankings.")) {
+      finishEventMutation.mutate();
+    }
   };
 
   const getEventTypeUnit = (eventType: string) => {
@@ -223,11 +275,24 @@ export default function RecordPerformance({ eventId }: RecordPerformanceProps) {
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground" data-testid="text-participants-count">
-            {participatingStudents.length} participants
-          </span>
+        <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+          <div className="flex items-center space-x-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground" data-testid="text-participants-count">
+              {participatingStudents.length} participants
+            </span>
+          </div>
+          
+          {event?.status === "in_progress" && (
+            <Button 
+              onClick={handleFinishEvent}
+              disabled={finishEventMutation.isPending}
+              data-testid="button-finish-event"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Finish Event
+            </Button>
+          )}
         </div>
       </div>
 
