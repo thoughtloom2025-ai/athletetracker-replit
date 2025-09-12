@@ -229,49 +229,7 @@ export default function Events() {
         </div>
       </Card>
 
-      {/* Live Event Card */}
-      {liveEvents.length > 0 && (
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 rounded-lg p-6 mb-6" data-testid="card-live-event">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="flex items-center space-x-2 mb-2">
-                <Badge className="animate-pulse bg-primary text-primary-foreground">
-                  LIVE
-                </Badge>
-                <h3 className="text-xl font-bold text-foreground" data-testid="text-live-event-name">
-                  {liveEvents[0].name}
-                </h3>
-              </div>
-              <p className="text-muted-foreground">
-                Started at {new Date(liveEvents[0].date).toLocaleTimeString()} • Round 1 of {liveEvents[0].rounds}
-              </p>
-            </div>
-            <Button 
-              className="min-h-[44px]"
-              data-testid="button-join-live-event"
-            >
-              Join Live Tracking
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">
-                {liveEvents[0].participants?.length || 0}
-              </p>
-              <p className="text-sm text-muted-foreground">Participants</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-secondary">0</p>
-              <p className="text-sm text-muted-foreground">Completed</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-accent">--</p>
-              <p className="text-sm text-muted-foreground">Best Performance</p>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Events List */}
       {filteredEvents.length === 0 ? (
