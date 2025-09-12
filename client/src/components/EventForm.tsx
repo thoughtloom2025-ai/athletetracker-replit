@@ -207,15 +207,51 @@ export function EventForm({ event, onClose }: EventFormProps) {
               <FormItem>
                 <FormLabel>Number of Rounds</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    min="1" 
-                    max="10" 
-                    {...field} 
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
-                    data-testid="input-event-rounds"
-                    className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                  />
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      max="10" 
+                      {...field} 
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
+                      data-testid="input-event-rounds"
+                      className="pr-12 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-8 p-0 hover:bg-muted"
+                        onClick={() => {
+                          const currentValue = field.value ? parseInt(field.value.toString()) : 1;
+                          const newValue = Math.min(currentValue + 1, 10);
+                          field.onChange(newValue);
+                        }}
+                        data-testid="button-rounds-increment"
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-8 p-0 hover:bg-muted"
+                        onClick={() => {
+                          const currentValue = field.value ? parseInt(field.value.toString()) : 1;
+                          const newValue = Math.max(currentValue - 1, 1);
+                          field.onChange(newValue);
+                        }}
+                        data-testid="button-rounds-decrement"
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
