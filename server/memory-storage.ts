@@ -53,14 +53,6 @@ export interface IStorage {
     averageAttendance: number;
     personalBests: number;
   }>;
-  
-  // Database health check
-  checkDatabaseHealth(): Promise<{
-    isHealthy: boolean;
-    connection: boolean;
-    tables: { [key: string]: boolean };
-    errors: string[];
-  }>;
 }
 
 export class MemoryStorage implements IStorage {
@@ -310,28 +302,6 @@ export class MemoryStorage implements IStorage {
       eventsThisWeek,
       averageAttendance,
       personalBests,
-    };
-  }
-
-  // Database health check (in-memory implementation)
-  async checkDatabaseHealth(): Promise<{
-    isHealthy: boolean;
-    connection: boolean;
-    tables: { [key: string]: boolean };
-    errors: string[];
-  }> {
-    // For in-memory storage, we just check that all Maps are initialized
-    return {
-      isHealthy: true,
-      connection: true,
-      tables: {
-        users: this.users instanceof Map,
-        students: this.students instanceof Map,
-        events: this.events instanceof Map,
-        attendance: this.attendance instanceof Map,
-        performances: this.performances instanceof Map,
-      },
-      errors: [],
     };
   }
 }
