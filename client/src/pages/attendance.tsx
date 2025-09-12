@@ -144,7 +144,7 @@ export default function Attendance() {
   };
 
   const handleDateSelect = (date: Date) => {
-    handleMarkAttendance(date);
+    setSelectedDate(date);
   };
 
   const formatSelectedDate = (date: Date) => {
