@@ -225,7 +225,7 @@ export default function Students() {
         </div>
       </Card>
 
-      {/* Students Grid */}
+      {/* Students Table */}
       {filteredStudents.length === 0 ? (
         <Card data-testid="card-empty-state">
           <CardContent className="text-center py-12">
@@ -258,90 +258,82 @@ export default function Students() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="students-grid">
-          {filteredStudents.map((student: Student) => (
-            <Card key={student.id} className="hover:shadow-lg transition-shadow" data-testid={`card-student-${student.id}`}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-card-foreground" data-testid={`text-student-name-${student.id}`}>
-                        {student.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground" data-testid={`text-student-age-${student.id}`}>
-                        Age {calculateAge(student.dateOfBirth)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleEditStudent(student)}
-                      data-testid={`button-edit-student-${student.id}`}
+        <Card data-testid="students-table">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-border">
+                  <tr className="text-left">
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Student</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Age</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Gender</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Date of Birth</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Joined</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Medical Conditions</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student: Student) => (
+                    <tr 
+                      key={student.id} 
+                      className="border-b border-border hover:bg-muted/50 transition-colors"
+                      data-testid={`row-student-${student.id}`}
                     >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleDeleteStudent(student.id)}
-                      data-testid={`button-delete-student-${student.id}`}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <dt className="text-xs text-muted-foreground uppercase tracking-wide">Gender</dt>
-                    <dd className="text-sm text-card-foreground capitalize" data-testid={`text-student-gender-${student.id}`}>
-                      {student.gender}
-                    </dd>
-                  </div>
-                  
-                  <div>
-                    <dt className="text-xs text-muted-foreground uppercase tracking-wide">Date of Birth</dt>
-                    <dd className="text-sm text-card-foreground" data-testid={`text-student-dob-${student.id}`}>
-                      {new Date(student.dateOfBirth).toLocaleDateString()}
-                    </dd>
-                  </div>
-                  
-                  <div>
-                    <dt className="text-xs text-muted-foreground uppercase tracking-wide">Joined</dt>
-                    <dd className="text-sm text-card-foreground" data-testid={`text-student-joined-${student.id}`}>
-                      {new Date(student.joiningDate).toLocaleDateString()}
-                    </dd>
-                  </div>
-
-                  {student.medicalConditions && (
-                    <div>
-                      <dt className="text-xs text-muted-foreground uppercase tracking-wide">Medical Conditions</dt>
-                      <dd className="text-sm text-card-foreground" data-testid={`text-student-medical-${student.id}`}>
-                        {student.medicalConditions}
-                      </dd>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Button 
-                    variant="link" 
-                    className="text-sm p-0"
-                    data-testid={`button-view-profile-${student.id}`}
-                  >
-                    View Full Profile
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-card-foreground" data-testid={`text-student-name-${student.id}`}>
+                              {student.name}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-age-${student.id}`}>
+                        {calculateAge(student.dateOfBirth)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-card-foreground capitalize" data-testid={`text-student-gender-${student.id}`}>
+                        {student.gender}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-dob-${student.id}`}>
+                        {new Date(student.dateOfBirth).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-joined-${student.id}`}>
+                        {new Date(student.joiningDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-medical-${student.id}`}>
+                        {student.medicalConditions || "-"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditStudent(student)}
+                            data-testid={`button-edit-student-${student.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteStudent(student.id)}
+                            data-testid={`button-delete-student-${student.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
