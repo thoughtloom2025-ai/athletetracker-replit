@@ -1,0 +1,107 @@
+You are a full-stack web developer tasked with building a comprehensive student athletics performance tracking web application. Create a complete, production-ready application with the following detailed specifications:
+
+## Project Overview
+Build a mobile-first web application for tracking student athletic performance, designed for coaches and parents with secure authentication and comprehensive data management.
+
+## Technical Requirements
+
+### Frontend & UI Design
+- **Framework**: Use React.js or Vue.js with TypeScript
+- **Styling**: Implement Tailwind CSS or Bootstrap for responsive design
+- **Responsive Design**: Ensure optimal viewing on mobile (primary), tablet, and desktop
+- **Theme Support**: Include both light and dark mode with system preference detection
+- **UX Elements**: Implement loading spinners, error boundaries, empty states, and skeleton loaders
+- **Mobile Optimization**: Design for thumb-friendly navigation with touch-optimized buttons (minimum 44px touch targets)
+- **Native Features**: Integrate system share sheet for sharing functionality
+- **Performance**: Optimize for fast loading with lazy loading and code splitting
+
+### Backend & Database
+- **Backend**: Node.js with Express.js or Python with FastAPI
+- **Database**: Supabase
+- **Authentication**: JWT-based authentication with refresh tokens
+- **Security**: Implement bcrypt for password hashing, rate limiting, and input validation
+- **File Storage**: Cloud storage solution for images and documents
+
+## User Management & Authentication
+
+### User Roles
+**Coach**: Full administrative access to student data and events
+**Admin**: Full Access
+
+### Authentication Features
+- Email/password login with validation (email format, password strength)
+- Password reset via secure email tokens
+- New coach registration with email verification
+- Role-based access control (RBAC) for all endpoints
+- Session management with secure token storage
+- Account deletion functionality
+
+## Core Features
+
+### Coach Dashboard
+- **Metrics Overview**: Display total students, events conducted, average attendance
+- **Quick Actions**: Add student, create event, mark attendance buttons
+- **Recent Activity**: Timeline of recent events and student additions
+- **Performance Insights**: Charts showing overall student progress
+
+### Student Profile Management
+- **CRUD Operations**: Create, read, update, delete student profiles (coach only)
+- **Required Fields**: Name, gender, address, medical conditions, date of birth, joining date
+- **Calculated Fields**: Auto-calculate and display current age
+- **Performance Visualization**: Individual student performance graphs and trends
+- **History Tracking**: Complete attendance history and event participation records
+
+### Event Management System
+- **Event Creation**: Support for various event types (Running, Long Jump, High Jump, etc.)
+- **Flexible Configuration**: Set number of rounds, distance/height measurements
+- **Student Selection**: Search and filter students by name, age, or other criteria
+- **Live Performance Tracking**: Real-time input during events with validation
+- **Results Calculation**: Automatic ranking and performance analysis
+- **Calendar Integration**: Event scheduling with calendar view
+
+### Attendance System
+- **Daily Tracking**: Mark attendance with date/time stamps
+- **Visual Calendar**: Monthly calendar view showing attendance patterns
+- **Bulk Operations**: Mark multiple students present/absent quickly
+- **Attendance Reports**: Generate and export attendance summaries
+
+### Reporting & Analytics
+- **Performance Reports**: Individual and group performance analysis
+- **Export Functionality**: PDF and Excel export for reports
+- **Visual Charts**: Progress tracking with interactive charts
+- **Shareable Results**: Generate shareable images/PDFs of event results
+
+## Data Models
+
+### Student Model
+```
+- id (UUID)
+- name (string, required)
+- gender (enum: Male/Female/Other)
+- dateOfBirth (date, required)
+- joiningDate (date, required)
+- address (text)
+- medicalConditions (text, optional)
+- coachId (foreign key)
+- createdAt/updatedAt (timestamps)
+```
+
+### Event Model
+```
+- id (UUID)
+- name (string, required)
+- type (enum: Running/LongJump/HighJump/etc.)
+- date (datetime, required)
+- rounds (integer, default: 1)
+- participants (array of student IDs)
+- results (JSON object)
+- coachId (foreign key)
+- status (enum: Planned/InProgress/Completed)
+```
+
+## Security & Compliance
+- **Data Encryption**: Encrypt sensitive data at rest and in transit
+- **COPPA Compliance**: Implement child data protection measures
+- **Privacy Policy**: Include comprehensive privacy policy and terms of use
+- **Data Retention**: Implement data retention policies and deletion capabilities
+- **Audit Logging**: Track all data modifications for accountability
