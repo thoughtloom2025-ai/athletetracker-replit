@@ -193,7 +193,7 @@ export default function Attendance() {
               onClick={handleMarkAttendance}
             >
               <ClipboardList className="h-5 w-5 mr-2" />
-              Mark Today's Attendance
+              Mark Attendance
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
