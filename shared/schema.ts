@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
+  uniqueIndex,
   jsonb,
   pgTable,
   timestamp,
@@ -80,7 +81,10 @@ export const attendance = pgTable("attendance", {
   late: boolean("late").default(false),
   coachId: varchar("coach_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  // Unique constraint to prevent duplicate attendance records for same student on same date
+  uniqueIndex("attendance_student_date_unique").on(table.studentId, table.date),
+]);
 
 // Performance records table
 export const performances = pgTable("performances", {
@@ -96,9 +100,12 @@ export const performances = pgTable("performances", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const upsertUserSchema = insertUserSchema.extend({
+  id: z.string().optional(),
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({
@@ -124,7 +131,7 @@ export const insertPerformanceSchema = createInsertSchema(performances).omit({
 });
 
 // Types
-export type UpsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;

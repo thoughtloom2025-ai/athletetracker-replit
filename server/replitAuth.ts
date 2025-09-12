@@ -6,7 +6,9 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import MemoryStore from "memorystore";
+import ConnectPgSimple from "connect-pg-simple";
 import { storage } from "./storage";
+import { db } from "./db";
 
 if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -24,23 +26,49 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  // Use in-memory store instead of PostgreSQL for session storage
-  const MemoryStoreSession = MemoryStore(session);
-  const sessionStore = new MemoryStoreSession({
-    checkPeriod: 86400000, // prune expired entries every 24h
-  });
   
-  return session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Only secure in production
-      maxAge: sessionTtl,
-    },
-  });
+  // Use PostgreSQL for persistent session storage in production
+  if (process.env.NODE_ENV === 'production') {
+    const PgSession = ConnectPgSimple(session);
+    const sessionStore = new PgSession({
+      // Use existing database connection through a pool
+      conString: process.env.DATABASE_URL || 
+        `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}?sslmode=require`,
+      tableName: 'sessions',
+      createTableIfMissing: false, // Table already exists in schema
+    });
+    
+    return session({
+      secret: process.env.SESSION_SECRET!,
+      store: sessionStore,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: sessionTtl,
+      },
+    });
+  } else {
+    // Use memory store in development for easier debugging
+    const MemoryStoreSession = MemoryStore(session);
+    const sessionStore = new MemoryStoreSession({
+      checkPeriod: 86400000, // prune expired entries every 24h
+    });
+    
+    return session({
+      secret: process.env.SESSION_SECRET!,
+      store: sessionStore,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: false,
+        maxAge: sessionTtl,
+      },
+    });
+  }
 }
 
 function updateUserSession(
