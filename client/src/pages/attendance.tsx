@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ClipboardList, 
   Calendar, 
@@ -22,6 +24,9 @@ export default function Attendance() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
+  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { present: boolean; late: boolean }>>({});
+  const queryClient = useQueryClient();
 
   const { data: attendanceData = [] } = useQuery({
     queryKey: ["/api/attendance"],
@@ -31,6 +36,37 @@ export default function Attendance() {
   const { data: students = [] } = useQuery({
     queryKey: ["/api/students"],
     enabled: isAuthenticated,
+  });
+
+  const markAttendanceMutation = useMutation({
+    mutationFn: async (attendanceData: any[]) => {
+      const response = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(attendanceData),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to mark attendance");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      toast({
+        title: "Success",
+        description: "Attendance marked successfully",
+      });
+      setIsMarkingAttendance(false);
+      setAttendanceRecords({});
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to mark attendance",
+        variant: "destructive",
+      });
+    },
   });
 
   // Handle unauthorized access
@@ -58,6 +94,42 @@ export default function Attendance() {
       }
       return newDate;
     });
+  };
+
+  const handleMarkAttendance = () => {
+    setIsMarkingAttendance(true);
+    // Initialize attendance records with existing today's data
+    const initialRecords: Record<string, { present: boolean; late: boolean }> = {};
+    students.forEach((student: any) => {
+      const todayRecord = todayAttendance.find((record: any) => record.studentId === student.id);
+      initialRecords[student.id] = {
+        present: todayRecord?.present ?? false,
+        late: todayRecord?.late ?? false,
+      };
+    });
+    setAttendanceRecords(initialRecords);
+  };
+
+  const handleSaveAttendance = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const attendanceData = students.map((student: any) => ({
+      studentId: student.id,
+      date: today,
+      present: attendanceRecords[student.id]?.present ?? false,
+      late: attendanceRecords[student.id]?.late ?? false,
+    }));
+
+    markAttendanceMutation.mutate(attendanceData);
+  };
+
+  const updateAttendanceRecord = (studentId: string, field: 'present' | 'late', value: boolean) => {
+    setAttendanceRecords(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        [field]: value,
+      },
+    }));
   };
 
   // Calculate today's attendance stats
@@ -113,10 +185,88 @@ export default function Attendance() {
           </h1>
           <p className="text-muted-foreground mt-1">Track daily attendance and view patterns</p>
         </div>
-        <Button className="mt-4 sm:mt-0 min-h-[44px]" data-testid="button-mark-attendance">
-          <ClipboardList className="h-5 w-5 mr-2" />
-          Mark Today's Attendance
-        </Button>
+        <Dialog open={isMarkingAttendance} onOpenChange={setIsMarkingAttendance}>
+          <DialogTrigger asChild>
+            <Button 
+              className="mt-4 sm:mt-0 min-h-[44px]" 
+              data-testid="button-mark-attendance"
+              onClick={handleMarkAttendance}
+            >
+              <ClipboardList className="h-5 w-5 mr-2" />
+              Mark Today's Attendance
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Mark Attendance for Today</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              {students.length > 0 ? (
+                students.map((student: any) => (
+                  <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{student.name}</p>
+                      <p className="text-sm text-muted-foreground">{student.email}</p>
+                    </div>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`present-${student.id}`}
+                          checked={attendanceRecords[student.id]?.present ?? false}
+                          onCheckedChange={(checked) => 
+                            updateAttendanceRecord(student.id, 'present', checked as boolean)
+                          }
+                        />
+                        <label 
+                          htmlFor={`present-${student.id}`} 
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Present
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`late-${student.id}`}
+                          checked={attendanceRecords[student.id]?.late ?? false}
+                          onCheckedChange={(checked) => 
+                            updateAttendanceRecord(student.id, 'late', checked as boolean)
+                          }
+                        />
+                        <label 
+                          htmlFor={`late-${student.id}`} 
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Late
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No students found. Add students first to mark attendance.
+                </p>
+              )}
+            </div>
+            {students.length > 0 && (
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsMarkingAttendance(false)}
+                  disabled={markAttendanceMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveAttendance}
+                  disabled={markAttendanceMutation.isPending}
+                >
+                  {markAttendanceMutation.isPending ? "Saving..." : "Save Attendance"}
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
