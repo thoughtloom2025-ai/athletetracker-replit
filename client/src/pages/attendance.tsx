@@ -319,11 +319,11 @@ export default function Attendance() {
             </CardHeader>
             <CardContent>
               <div className="text-center mb-4">
-                <p className="text-3xl font-bold text-secondary" data-testid="text-today-present">
+                <p className="text-3xl font-bold text-primary" data-testid="text-today-present">
                   {presentToday}/{totalStudents}
                 </p>
                 <p className="text-sm text-muted-foreground">Students Present</p>
-                <p className="text-lg font-semibold text-secondary" data-testid="text-today-percentage">
+                <p className="text-2xl font-bold text-primary" data-testid="text-today-percentage">
                   {attendancePercentage}%
                 </p>
               </div>
