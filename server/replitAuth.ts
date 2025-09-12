@@ -111,8 +111,10 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  // Get all possible domains (development and production)
+  const domains = process.env.REPLIT_DOMAINS!.split(",");
+  
+  for (const domain of domains) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -129,14 +131,28 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Try to find a matching strategy for the current hostname
+    const hostname = req.hostname;
+    const domains = process.env.REPLIT_DOMAINS!.split(",");
+    
+    // Find exact match or use first domain as fallback
+    const matchedDomain = domains.find(domain => domain === hostname) || domains[0];
+    
+    passport.authenticate(`replitauth:${matchedDomain}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Try to find a matching strategy for the current hostname
+    const hostname = req.hostname;
+    const domains = process.env.REPLIT_DOMAINS!.split(",");
+    
+    // Find exact match or use first domain as fallback
+    const matchedDomain = domains.find(domain => domain === hostname) || domains[0];
+    
+    passport.authenticate(`replitauth:${matchedDomain}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
