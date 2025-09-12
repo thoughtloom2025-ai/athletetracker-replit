@@ -16,10 +16,12 @@ import {
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useLocation } from "wouter";
 
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: stats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
@@ -144,6 +146,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Button 
               className="min-h-[60px] flex items-center justify-center"
+              onClick={() => setLocation("/students")}
               data-testid="button-add-student"
             >
               <Plus className="h-5 w-5 mr-2" />
@@ -153,6 +156,7 @@ export default function Dashboard() {
             <Button 
               variant="secondary" 
               className="min-h-[60px] flex items-center justify-center"
+              onClick={() => setLocation("/events")}
               data-testid="button-create-event"
             >
               <CalendarPlus className="h-5 w-5 mr-2" />
@@ -161,6 +165,7 @@ export default function Dashboard() {
             
             <Button 
               className="min-h-[60px] flex items-center justify-center bg-accent hover:bg-accent/90 text-accent-foreground"
+              onClick={() => setLocation("/attendance")}
               data-testid="button-mark-attendance"
             >
               <ClipboardList className="h-5 w-5 mr-2" />
