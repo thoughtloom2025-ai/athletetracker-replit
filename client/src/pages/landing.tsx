@@ -87,6 +87,7 @@ export default function Landing() {
                   variant="link" 
                   className="text-sm font-medium p-0"
                   data-testid="button-create-account"
+                  onClick={handleLogin}
                 >
                   Create account
                 </Button>
