@@ -43,7 +43,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
       name: event?.name || "",
       type: event?.type || "running",
       date: event?.date ? new Date(event.date).toISOString().slice(0, 10) : "",
-      rounds: event?.rounds || undefined,
+      rounds: event?.rounds || "",
       participants: event?.participants || [],
       status: event?.status || "planned",
     },
