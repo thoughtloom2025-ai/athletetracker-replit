@@ -24,6 +24,7 @@ export default function Attendance() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { present: boolean; late: boolean }>>({});
   const queryClient = useQueryClient();
@@ -58,6 +59,7 @@ export default function Attendance() {
         description: "Attendance marked successfully",
       });
       setIsMarkingAttendance(false);
+      setSelectedDate(null);
       setAttendanceRecords({});
     },
     onError: () => {
@@ -96,25 +98,34 @@ export default function Attendance() {
     });
   };
 
-  const handleMarkAttendance = () => {
+  const handleMarkAttendance = (date?: Date) => {
+    const targetDate = date || new Date();
+    setSelectedDate(targetDate);
     setIsMarkingAttendance(true);
-    // Initialize attendance records with existing today's data
+    
+    // Initialize attendance records with existing data for the selected date
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const existingAttendance = attendanceData.filter((record: any) => 
+      record.date === targetDateStr
+    );
+    
     const initialRecords: Record<string, { present: boolean; late: boolean }> = {};
     students.forEach((student: any) => {
-      const todayRecord = todayAttendance.find((record: any) => record.studentId === student.id);
+      const existingRecord = existingAttendance.find((record: any) => record.studentId === student.id);
       initialRecords[student.id] = {
-        present: todayRecord?.present ?? false,
-        late: todayRecord?.late ?? false,
+        present: existingRecord?.present ?? false,
+        late: existingRecord?.late ?? false,
       };
     });
     setAttendanceRecords(initialRecords);
   };
 
   const handleSaveAttendance = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const targetDate = selectedDate || new Date();
+    const dateStr = targetDate.toISOString().split('T')[0];
     const attendanceData = students.map((student: any) => ({
       studentId: student.id,
-      date: today,
+      date: dateStr,
       present: attendanceRecords[student.id]?.present ?? false,
       late: attendanceRecords[student.id]?.late ?? false,
     }));
@@ -130,6 +141,19 @@ export default function Attendance() {
         [field]: value,
       },
     }));
+  };
+
+  const handleDateSelect = (date: Date) => {
+    handleMarkAttendance(date);
+  };
+
+  const formatSelectedDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
   };
 
   // Calculate today's attendance stats
@@ -198,7 +222,9 @@ export default function Attendance() {
           </DialogTrigger>
           <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Mark Attendance for Today</DialogTitle>
+              <DialogTitle>
+                Mark Attendance for {selectedDate ? formatSelectedDate(selectedDate) : 'Today'}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               {students.length > 0 ? (
@@ -304,6 +330,7 @@ export default function Attendance() {
               <AttendanceCalendar 
                 attendanceData={attendanceData}
                 currentMonth={currentMonth}
+                onDateSelect={handleDateSelect}
               />
             </CardContent>
           </Card>

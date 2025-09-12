@@ -5,9 +5,10 @@ import type { Attendance } from "@shared/schema";
 interface AttendanceCalendarProps {
   attendanceData: Attendance[];
   currentMonth: Date;
+  onDateSelect?: (date: Date) => void;
 }
 
-export function AttendanceCalendar({ attendanceData, currentMonth }: AttendanceCalendarProps) {
+export function AttendanceCalendar({ attendanceData, currentMonth, onDateSelect }: AttendanceCalendarProps) {
   const today = new Date();
   const currentDate = new Date(currentMonth);
   
@@ -67,6 +68,13 @@ export function AttendanceCalendar({ attendanceData, currentMonth }: AttendanceC
     );
   };
 
+  const handleDateClick = (day: number) => {
+    if (onDateSelect) {
+      const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      onDateSelect(selectedDate);
+    }
+  };
+
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
@@ -96,9 +104,11 @@ export function AttendanceCalendar({ attendanceData, currentMonth }: AttendanceC
               key={day}
               variant="ghost"
               className={cn(
-                "relative p-3 text-center text-sm h-auto hover:bg-muted transition-colors",
-                todayClass ? "bg-primary text-primary-foreground font-medium" : "text-card-foreground"
+                "relative p-3 text-center text-sm h-auto hover:bg-muted transition-colors cursor-pointer",
+                todayClass ? "bg-primary text-primary-foreground font-medium" : "text-card-foreground",
+                onDateSelect && "hover:bg-accent hover:text-accent-foreground"
               )}
+              onClick={() => handleDateClick(day)}
               data-testid={`calendar-day-${day}`}
             >
               {day}
