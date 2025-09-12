@@ -328,26 +328,6 @@ export default function Attendance() {
                 </p>
               </div>
 
-              {(absentStudents.length > 0 || lateStudents.length > 0) && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-card-foreground">Issues Today</h4>
-                  <div className="space-y-1">
-                    {absentStudents.map((record: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Student {index + 1}</span>
-                        <Badge variant="destructive" className="text-xs">Absent</Badge>
-                      </div>
-                    ))}
-                    {lateStudents.map((record: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Student {index + 1}</span>
-                        <Badge variant="secondary" className="text-xs">Late</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               
             </CardContent>
           </Card>
