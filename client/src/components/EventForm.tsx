@@ -17,7 +17,7 @@ import { z } from "zod";
 
 const formSchema = insertEventSchema.extend({
   name: z.string().min(1, "Event name is required"),
-  date: z.string().min(1, "Event date is required"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Event date is required and must be in YYYY-MM-DD format"),
   participants: z.array(z.string()).optional(),
 }).omit({ coachId: true });
 
