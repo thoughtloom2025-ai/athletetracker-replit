@@ -348,13 +348,7 @@ export default function Attendance() {
                 </div>
               )}
 
-              <Button 
-                className="w-full mt-4 min-h-[44px]" 
-                variant="outline"
-                data-testid="button-edit-today-attendance"
-              >
-                Edit Today's Attendance
-              </Button>
+              
             </CardContent>
           </Card>
 
