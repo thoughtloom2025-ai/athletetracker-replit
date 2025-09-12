@@ -214,6 +214,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
                     {...field} 
                     onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                     data-testid="input-event-rounds"
+                    className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                   />
                 </FormControl>
                 <FormMessage />
