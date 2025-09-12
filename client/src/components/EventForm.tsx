@@ -42,7 +42,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
     defaultValues: {
       name: event?.name || "",
       type: event?.type || "running",
-      date: event?.date ? new Date(event.date).toISOString().slice(0, 16) : "",
+      date: event?.date ? new Date(event.date).toISOString().slice(0, 10) : "",
       rounds: event?.rounds || 1,
       participants: event?.participants || [],
       status: event?.status || "planned",
@@ -53,7 +53,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
     mutationFn: async (data: z.infer<typeof formSchema>) => {
       const eventData = {
         ...data,
-        date: new Date(data.date).toISOString(),
+        date: new Date(data.date + 'T00:00:00').toISOString(),
         participants: selectedParticipants,
       };
       await apiRequest("POST", "/api/events", eventData);
@@ -91,7 +91,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
     mutationFn: async (data: z.infer<typeof formSchema>) => {
       const eventData = {
         ...data,
-        date: new Date(data.date).toISOString(),
+        date: new Date(data.date + 'T00:00:00').toISOString(),
         participants: selectedParticipants,
       };
       await apiRequest("PUT", `/api/events/${event!.id}`, eventData);
@@ -191,9 +191,9 @@ export function EventForm({ event, onClose }: EventFormProps) {
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date & Time *</FormLabel>
+                <FormLabel>Date *</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} data-testid="input-event-date" />
+                  <Input type="date" {...field} data-testid="input-event-date" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
