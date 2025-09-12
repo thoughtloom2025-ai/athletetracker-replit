@@ -105,11 +105,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const eventData = insertEventSchema.parse({ ...req.body, coachId: userId });
+      
+      // Convert date string from frontend to Date object for backend validation
+      const requestData = { ...req.body, coachId: userId };
+      if (requestData.date && typeof requestData.date === 'string') {
+        requestData.date = new Date(requestData.date);
+      }
+      
+      const eventData = insertEventSchema.parse(requestData);
       const event = await storage.createEvent(eventData);
       res.json(event);
     } catch (error) {
       console.error("Error creating event:", error);
+      if (error.errors) {
+        console.error("Validation errors:", error.errors);
+      }
       res.status(400).json({ message: "Failed to create event" });
     }
   });
@@ -129,7 +139,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const eventData = insertEventSchema.partial().parse(req.body);
+      // Convert date string from frontend to Date object for backend validation
+      const requestData = { ...req.body };
+      if (requestData.date && typeof requestData.date === 'string') {
+        requestData.date = new Date(requestData.date);
+      }
+      
+      const eventData = insertEventSchema.partial().parse(requestData);
       const event = await storage.updateEvent(req.params.id, eventData);
       res.json(event);
     } catch (error) {
