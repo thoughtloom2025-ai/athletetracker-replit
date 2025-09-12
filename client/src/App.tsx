@@ -12,6 +12,7 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Students from "@/pages/students";
 import Events from "@/pages/events";
+import RecordPerformance from "@/pages/record-performance";
 import Attendance from "@/pages/attendance";
 import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
@@ -41,6 +42,9 @@ function Router() {
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/students" component={Students} />
             <Route path="/events" component={Events} />
+            <Route path="/events/:eventId/record">
+              {(params) => <RecordPerformance eventId={params.eventId} />}
+            </Route>
             <Route path="/attendance" component={Attendance} />
             <Route path="/reports" component={Reports} />
             <Route component={NotFound} />

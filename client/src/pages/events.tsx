@@ -17,25 +17,28 @@ import {
   Share,
   Eye,
   Clock,
-  Trophy
+  Trophy,
+  FileText
 } from "lucide-react";
 import { EventForm } from "@/components/EventForm";
 import type { Event } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 export default function Events() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
-  const { data: events = [], isLoading: eventsLoading } = useQuery({
+  const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
     enabled: isAuthenticated,
   });
@@ -112,6 +115,10 @@ export default function Events() {
   const handleEditEvent = (event: Event) => {
     setEditingEvent(event);
     setIsDialogOpen(true);
+  };
+
+  const handleRecordEvent = (eventId: string) => {
+    setLocation(`/events/${eventId}/record`);
   };
 
   const handleCloseDialog = () => {
@@ -275,16 +282,16 @@ export default function Events() {
                         {event.name}
                       </h3>
                       <Badge 
-                        className={getEventTypeColor(event.type)}
+                        className={getEventTypeColor(event.type || "")}
                         data-testid={`badge-event-type-${event.id}`}
                       >
-                        {event.type.replace('_', ' ')}
+                        {(event.type || "").replace('_', ' ')}
                       </Badge>
                       <Badge 
-                        variant={getStatusBadgeVariant(event.status)}
+                        variant={getStatusBadgeVariant(event.status || "")}
                         data-testid={`badge-event-status-${event.id}`}
                       >
-                        {event.status.replace('_', ' ')}
+                        {(event.status || "").replace('_', ' ')}
                       </Badge>
                     </div>
                     
@@ -343,10 +350,11 @@ export default function Events() {
                     ) : event.status === "in_progress" ? (
                       <Button 
                         size="sm"
-                        data-testid={`button-continue-event-${event.id}`}
+                        onClick={() => handleRecordEvent(event.id)}
+                        data-testid={`button-record-event-${event.id}`}
                       >
-                        <Play className="h-4 w-4 mr-1" />
-                        Continue
+                        <FileText className="h-4 w-4 mr-1" />
+                        Record
                       </Button>
                     ) : (
                       <Button 
