@@ -43,7 +43,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
       name: event?.name || "",
       type: event?.type || "running",
       date: event?.date ? new Date(event.date).toISOString().slice(0, 10) : "",
-      rounds: event?.rounds || "",
+      rounds: event?.rounds || 1,
       participants: event?.participants || [],
       status: event?.status || "planned",
     },
@@ -212,7 +212,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
                     min="1" 
                     max="10" 
                     {...field} 
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
                     data-testid="input-event-rounds"
                     className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                   />
