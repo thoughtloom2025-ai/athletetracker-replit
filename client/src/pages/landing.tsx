@@ -1,10 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 import { Zap } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 
 export default function Landing() {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,72 +25,21 @@ export default function Landing() {
 
         <Card className="shadow-lg">
           <CardContent className="pt-6">
-            <form 
-              className="space-y-6" 
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleLogin();
-              }}
-            >
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input 
-                  type="email" 
-                  id="email"
-                  data-testid="input-email"
-                  placeholder="coach@school.edu"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input 
-                  type="password" 
-                  id="password"
-                  data-testid="input-password"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" data-testid="checkbox-remember" />
-                  <Label htmlFor="remember" className="text-sm">Remember me</Label>
-                </div>
-                <Button 
-                  type="button" 
-                  variant="link" 
-                  className="text-sm"
-                  data-testid="button-forgot-password"
-                >
-                  Forgot password?
-                </Button>
-              </div>
-
+            <div className="space-y-4">
               <Button 
-                type="submit" 
-                className="w-full min-h-[44px]"
+                onClick={handleLogin}
+                className="w-full min-h-[44px] flex items-center justify-center gap-3"
                 disabled={isLoading}
-                data-testid="button-login"
+                data-testid="button-google-signin"
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                <SiGoogle className="h-5 w-5" />
+                {isLoading ? "Connecting..." : "Sign in with Google"}
               </Button>
-
-              <div className="text-center">
-                <span className="text-sm text-muted-foreground">New coach? </span>
-                <Button 
-                  type="button" 
-                  variant="link" 
-                  className="text-sm font-medium p-0"
-                  data-testid="button-create-account"
-                  onClick={handleLogin}
-                >
-                  Create account
-                </Button>
-              </div>
-            </form>
+              
+              <p className="text-center text-sm text-muted-foreground">
+                New to AthleteTracker Pro? Your account will be created automatically.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
