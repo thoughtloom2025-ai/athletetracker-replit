@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
 import { insertStudentSchema, insertEventSchema, insertAttendanceSchema, insertPerformanceSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  await setupAuth(app);
+  await setupGoogleAuth(app);
 
   // Health check endpoint for deployment verification
   app.get('/health', (_req, res) => {
@@ -21,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -33,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const stats = await storage.getDashboardStats(userId);
       res.json(stats);
     } catch (error) {
@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Student routes
   app.get('/api/students', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const students = await storage.getStudents(userId);
       res.json(students);
     } catch (error) {
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/students', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const studentData = insertStudentSchema.parse({ ...req.body, coachId: userId });
       const student = await storage.createStudent(studentData);
       res.json(student);
@@ -103,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Event routes
   app.get('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const events = await storage.getEvents(userId);
       res.json(events);
     } catch (error) {
@@ -114,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       // Convert date string from frontend to Date object for backend validation
       const requestData = { ...req.body, coachId: userId };
@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Attendance routes
   app.get('/api/attendance', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { date, startDate, endDate } = req.query;
       
       let attendance;
@@ -203,7 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/attendance', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const attendanceData = z.array(insertAttendanceSchema).parse(
         req.body.map((item: any) => ({ ...item, coachId: userId }))
       );
