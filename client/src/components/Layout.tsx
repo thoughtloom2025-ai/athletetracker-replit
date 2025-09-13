@@ -2,7 +2,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigation } from "./Navigation";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Zap } from "lucide-react";
+import { Moon, Sun, Zap, LogOut } from "lucide-react";
+import { useState } from "react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,9 +12,30 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        window.location.href = '/';
+      } else {
+        console.error('Sign out failed');
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -39,18 +61,31 @@ export function Layout({ children }: LayoutProps) {
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
             
-            <Button 
-              variant="ghost"
-              size="sm"
-              className="min-h-[44px] min-w-[44px]"
-              data-testid="button-profile-mobile"
-            >
-              <div className="h-6 w-6 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-primary-foreground">
-                  {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
-                </span>
-              </div>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px]"
+                data-testid="button-profile-mobile"
+              >
+                <div className="h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-xs font-medium text-primary-foreground">
+                    {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
+                  </span>
+                </div>
+              </Button>
+              
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                className="min-h-[44px] min-w-[44px]"
+                data-testid="button-signout-mobile"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -64,15 +99,26 @@ export function Layout({ children }: LayoutProps) {
             </div>
             <h1 className="text-lg font-semibold text-card-foreground">AthleteTracker</h1>
             
-            <Button 
-              variant="ghost"
-              size="sm"
-              onClick={toggleTheme}
-              className="ml-auto"
-              data-testid="button-theme-toggle-desktop"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
+            <div className="ml-auto flex items-center space-x-2">
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={toggleTheme}
+                data-testid="button-theme-toggle-desktop"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+              
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                data-testid="button-signout-desktop"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <Navigation />
