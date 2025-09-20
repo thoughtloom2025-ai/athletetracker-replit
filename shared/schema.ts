@@ -72,6 +72,7 @@ export const events = pgTable("events", {
   name: varchar("name", { length: 255 }).notNull(),
   type: eventTypeEnum("type").notNull(),
   date: timestamp("date").notNull(),
+  distance: varchar("distance", { length: 100 }), // e.g., "100m", "5km", "High Jump"
   rounds: integer("rounds").default(1),
   participants: text("participants").array(), // Array of student IDs
   results: jsonb("results"), // Store performance results

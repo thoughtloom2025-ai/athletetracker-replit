@@ -563,13 +563,21 @@ export default function Events() {
                       </Badge>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4" />
                         <span data-testid={`text-event-date-${event.id}`}>
                           {new Date(event.date).toLocaleString()}
                         </span>
                       </div>
+                      {event.distance && (
+                        <div className="flex items-center space-x-2">
+                          <Target className="h-4 w-4" />
+                          <span data-testid={`text-event-distance-${event.id}`}>
+                            {event.distance}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center space-x-2">
                         <Users className="h-4 w-4" />
                         <span data-testid={`text-event-participants-${event.id}`}>

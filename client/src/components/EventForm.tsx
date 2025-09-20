@@ -18,6 +18,7 @@ import { z } from "zod";
 const formSchema = insertEventSchema.extend({
   name: z.string().min(1, "Event name is required"),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Event date is required and must be in YYYY-MM-DD format"),
+  distance: z.string().optional(),
   participants: z.array(z.string()).optional(),
 }).omit({ coachId: true });
 
@@ -43,6 +44,7 @@ export function EventForm({ event, onClose }: EventFormProps) {
       name: event?.name || "",
       type: event?.type || "running",
       date: event?.date ? new Date(event.date).toISOString().slice(0, 10) : "",
+      distance: event?.distance || "",
       rounds: event?.rounds || 1,
       participants: event?.participants || [],
       status: event?.status || "planned",
@@ -181,6 +183,24 @@ export function EventForm({ event, onClose }: EventFormProps) {
                     <SelectItem value="discus">Discus</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="distance"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Distance</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="e.g., 100m, 5km, or leave blank" 
+                    {...field} 
+                    data-testid="input-event-distance" 
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
