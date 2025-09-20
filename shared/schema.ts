@@ -114,6 +114,22 @@ export const insertStudentSchema = createInsertSchema(students).omit({
   updatedAt: true,
 });
 
+// Update insertStudentSchema to include new optional fields
+const formSchema = insertStudentSchema.extend({
+  name: z.string().min(1, "Name is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  joiningDate: z.string().min(1, "Joining date is required"),
+  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  phoneNumber: z.string().optional(),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  school: z.string().optional(),
+  gradeStudying: z.string().optional(),
+  attendedCoachingBefore: z.boolean().optional(),
+  previousCoachClub: z.string().optional(),
+  injuryHealthIssues: z.string().optional(),
+}).omit({ coachId: true });
+
 export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
   createdAt: true,
