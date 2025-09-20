@@ -13,7 +13,8 @@ import {
   Edit, 
   Trash2, 
   User,
-  Users
+  Users,
+  Eye
 } from "lucide-react";
 import { StudentForm } from "@/components/StudentForm";
 import type { Student } from "@shared/schema";
@@ -30,6 +31,8 @@ export default function Students() {
   const [ageFilter, setAgeFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   const { data: students = [], isLoading: studentsLoading } = useQuery({
     queryKey: ["/api/students"],
@@ -135,9 +138,19 @@ export default function Students() {
     setIsDialogOpen(true);
   };
 
+  const handleViewStudent = (student: Student) => {
+    setViewingStudent(student);
+    setIsViewDialogOpen(true);
+  };
+
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingStudent(null);
+  };
+
+  const handleCloseViewDialog = () => {
+    setIsViewDialogOpen(false);
+    setViewingStudent(null);
   };
 
   if (isLoading || studentsLoading) {
@@ -320,6 +333,14 @@ export default function Students() {
                           <Button 
                             variant="ghost" 
                             size="sm"
+                            onClick={() => handleViewStudent(student)}
+                            data-testid={`button-view-student-${student.id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
                             onClick={() => handleEditStudent(student)}
                             data-testid={`button-edit-student-${student.id}`}
                           >
@@ -343,6 +364,130 @@ export default function Students() {
           </CardContent>
         </Card>
       )}
+
+      {/* Student Details View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Student Details</DialogTitle>
+          </DialogHeader>
+          {viewingStudent && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Name</label>
+                    <p className="text-sm">{viewingStudent.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                    <p className="text-sm">{viewingStudent.email || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                    <p className="text-sm capitalize">{viewingStudent.gender}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                    <p className="text-sm">{new Date(viewingStudent.dateOfBirth).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Age</label>
+                    <p className="text-sm">{calculateAge(viewingStudent.dateOfBirth)} years</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
+                    <p className="text-sm">{viewingStudent.phoneNumber || "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Family Information */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Family Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Father's Name</label>
+                    <p className="text-sm">{viewingStudent.fatherName || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Mother's Name</label>
+                    <p className="text-sm">{viewingStudent.motherName || "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Academic Information */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Academic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">School</label>
+                    <p className="text-sm">{viewingStudent.school || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Grade/Class</label>
+                    <p className="text-sm">{viewingStudent.gradeStudying || "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Coaching History */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Coaching History</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Attended Coaching Before</label>
+                    <p className="text-sm">{viewingStudent.attendedCoachingBefore ? "Yes" : "No"}</p>
+                  </div>
+                  {viewingStudent.attendedCoachingBefore && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Previous Coach/Club Name</label>
+                      <p className="text-sm">{viewingStudent.previousCoachClub || "-"}</p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Joining Date</label>
+                    <p className="text-sm">{new Date(viewingStudent.joiningDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Health Information */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Health Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Injury/Health Issues</label>
+                    <p className="text-sm whitespace-pre-wrap">{viewingStudent.injuryHealthIssues || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Medical Conditions</label>
+                    <p className="text-sm whitespace-pre-wrap">{viewingStudent.medicalConditions || "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Address</label>
+                  <p className="text-sm whitespace-pre-wrap">{viewingStudent.address || "-"}</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleCloseViewDialog} variant="outline">
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
