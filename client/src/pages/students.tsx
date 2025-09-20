@@ -278,13 +278,13 @@ export default function Students() {
                 <thead className="border-b border-border">
                   <tr className="text-left">
                     <th className="px-6 py-4 font-medium text-muted-foreground">Student</th>
-                    <th className="px-6 py-4 font-medium text-muted-foreground">Email</th>
-                    <th className="px-6 py-4 font-medium text-muted-foreground">Phone</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground hidden lg:table-cell">Email</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground hidden lg:table-cell">Phone</th>
                     <th className="px-6 py-4 font-medium text-muted-foreground">Age</th>
-                    <th className="px-6 py-4 font-medium text-muted-foreground">Gender</th>
-                    <th className="px-6 py-4 font-medium text-muted-foreground">School</th>
-                    <th className="px-6 py-4 font-medium text-muted-foreground">Grade</th>
-                    <th className="px-6 py-4 font-medium text-muted-foreground">Joined</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground hidden lg:table-cell">Gender</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground hidden lg:table-cell">School</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground hidden lg:table-cell">Grade</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground hidden lg:table-cell">Joined</th>
                     <th className="px-6 py-4 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
@@ -307,25 +307,25 @@ export default function Students() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-email-${student.id}`}>
+                      <td className="px-6 py-4 text-sm text-card-foreground hidden lg:table-cell" data-testid={`text-student-email-${student.id}`}>
                         {student.email || "-"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-phone-${student.id}`}>
+                      <td className="px-6 py-4 text-sm text-card-foreground hidden lg:table-cell" data-testid={`text-student-phone-${student.id}`}>
                         {student.phoneNumber || "-"}
                       </td>
                       <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-age-${student.id}`}>
                         {calculateAge(student.dateOfBirth)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-card-foreground capitalize" data-testid={`text-student-gender-${student.id}`}>
+                      <td className="px-6 py-4 text-sm text-card-foreground capitalize hidden lg:table-cell" data-testid={`text-student-gender-${student.id}`}>
                         {student.gender}
                       </td>
-                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-school-${student.id}`}>
+                      <td className="px-6 py-4 text-sm text-card-foreground hidden lg:table-cell" data-testid={`text-student-school-${student.id}`}>
                         {student.school || "-"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-grade-${student.id}`}>
+                      <td className="px-6 py-4 text-sm text-card-foreground hidden lg:table-cell" data-testid={`text-student-grade-${student.id}`}>
                         {student.gradeStudying || "-"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-card-foreground" data-testid={`text-student-joined-${student.id}`}>
+                      <td className="px-6 py-4 text-sm text-card-foreground hidden lg:table-cell" data-testid={`text-student-joined-${student.id}`}>
                         {new Date(student.joiningDate).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
