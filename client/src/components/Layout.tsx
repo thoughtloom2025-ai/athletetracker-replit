@@ -141,7 +141,7 @@ export function Layout({ children }: LayoutProps) {
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto" data-testid="main-content">
+        <main className="flex-1 overflow-auto lg:pb-0 pb-20" data-testid="main-content">
           {children}
         </main>
       </div>
