@@ -111,7 +111,7 @@ export async function setupGoogleAuth(app: Express) {
     // Determine callback URL based on environment
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}`
-      : 'http://localhost:5000';
+      : `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || '0.0.0.0:5000'}`;
     
     const callbackURL = `${baseUrl}/api/auth/google/callback`;
     
