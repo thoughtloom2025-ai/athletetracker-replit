@@ -47,10 +47,19 @@ export const eventStatusEnum = pgEnum("event_status", ["planned", "in_progress",
 export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
   gender: genderEnum("gender").notNull(),
   dateOfBirth: date("date_of_birth").notNull(),
-  joiningDate: date("joining_date").notNull(),
+  fatherName: varchar("father_name", { length: 255 }),
+  motherName: varchar("mother_name", { length: 255 }),
+  phoneNumber: varchar("phone_number", { length: 50 }),
   address: text("address"),
+  school: varchar("school", { length: 255 }),
+  gradeStudying: varchar("grade_studying", { length: 100 }),
+  attendedCoachingBefore: boolean("attended_coaching_before").default(false),
+  previousCoachClub: varchar("previous_coach_club", { length: 255 }),
+  injuryHealthIssues: text("injury_health_issues"),
+  joiningDate: date("joining_date").notNull(),
   medicalConditions: text("medical_conditions"),
   coachId: varchar("coach_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -113,22 +122,6 @@ export const insertStudentSchema = createInsertSchema(students).omit({
   createdAt: true,
   updatedAt: true,
 });
-
-// Update insertStudentSchema to include new optional fields
-const formSchema = insertStudentSchema.extend({
-  name: z.string().min(1, "Name is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  joiningDate: z.string().min(1, "Joining date is required"),
-  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
-  phoneNumber: z.string().optional(),
-  fatherName: z.string().optional(),
-  motherName: z.string().optional(),
-  school: z.string().optional(),
-  gradeStudying: z.string().optional(),
-  attendedCoachingBefore: z.boolean().optional(),
-  previousCoachClub: z.string().optional(),
-  injuryHealthIssues: z.string().optional(),
-}).omit({ coachId: true });
 
 export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
