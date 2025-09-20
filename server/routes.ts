@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertStudentSchema, insertEventSchema, insertAttendanceSchema, insertPerformanceSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  await setupGoogleAuth(app);
+  await setupAuth(app);
 
   // Health check endpoint for deployment verification
   app.get('/health', (_req, res) => {
@@ -21,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -30,27 +30,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/logout', (req: any, res) => {
-    req.logout((err: any) => {
-      if (err) {
-        console.error("Error logging out:", err);
-        return res.status(500).json({ message: "Failed to logout" });
-      }
-      req.session.destroy((err: any) => {
-        if (err) {
-          console.error("Error destroying session:", err);
-          return res.status(500).json({ message: "Failed to destroy session" });
-        }
-        res.clearCookie('connect.sid');
-        res.json({ message: "Logged out successfully" });
-      });
-    });
-  });
+  // Logout is handled by setupAuth in replitAuth.ts
 
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const stats = await storage.getDashboardStats(userId);
       res.json(stats);
     } catch (error) {
@@ -62,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Student routes
   app.get('/api/students', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const students = await storage.getStudents(userId);
       res.json(students);
     } catch (error) {
@@ -73,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/students', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const studentData = insertStudentSchema.parse({ ...req.body, coachId: userId });
       const student = await storage.createStudent(studentData);
       res.json(student);
@@ -120,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Event routes
   app.get('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const events = await storage.getEvents(userId);
       res.json(events);
     } catch (error) {
@@ -131,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       
       // Convert date string from frontend to Date object for backend validation
       const requestData = { ...req.body, coachId: userId };
@@ -195,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Attendance routes
   app.get('/api/attendance', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const { date, startDate, endDate } = req.query;
       
       let attendance;
@@ -220,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/attendance', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const attendanceData = z.array(insertAttendanceSchema).parse(
         req.body.map((item: any) => ({ ...item, coachId: userId }))
       );
