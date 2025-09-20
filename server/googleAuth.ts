@@ -109,9 +109,11 @@ export async function setupGoogleAuth(app: Express) {
     app.use(passport.session());
 
     // Determine callback URL based on environment
+    // First domain is production, second domain is development
+    const domains = process.env.REPLIT_DOMAINS?.split(',') || [];
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}`
-      : `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || '0.0.0.0:5000'}`;
+      ? `https://${domains[0] || 'localhost'}`
+      : `https://${domains[1] || domains[0] || '0.0.0.0:5000'}`;
     
     const callbackURL = `${baseUrl}/api/auth/google/callback`;
     
