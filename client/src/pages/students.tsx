@@ -117,13 +117,16 @@ export default function Students() {
   });
 
   const calculateAge = (dateOfBirth: string) => {
-    const birth = new Date(dateOfBirth);
+    // Parse YYYY-MM-DD format date
+    const birth = new Date(dateOfBirth + 'T00:00:00'); // Add time to ensure consistent parsing
     const today = new Date();
-    const age = today.getFullYear() - birth.getFullYear();
+    
+    let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     
+    // Check if birthday hasn't occurred this year yet
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      return age - 1;
+      age = age - 1;
     }
     
     return age;
