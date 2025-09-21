@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ import * as XLSX from 'xlsx';
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: stats } = useQuery({
@@ -93,7 +93,7 @@ export default function Dashboard() {
 
     // Download the file
     XLSX.writeFile(wb, "students_import_template.xlsx");
-    
+
     toast({
       title: "Template Downloaded",
       description: "Excel template has been downloaded successfully.",
@@ -127,11 +127,14 @@ export default function Dashboard() {
       }
 
       const result = await response.json();
-      
+
       toast({
         title: "Import Successful",
         description: `Successfully added ${result.count} new students. Existing students were not affected.`,
       });
+
+      // Invalidate the students query cache to refetch the data
+      queryClient.invalidateQueries({ queryKey: ["/api/students"] });
 
       // Reset file input
       if (fileInputRef.current) {
@@ -260,7 +263,7 @@ export default function Dashboard() {
               <Plus className="h-5 w-5 mr-2" />
               Add Student
             </Button>
-            
+
             <Button 
               variant="secondary" 
               className="min-h-[60px] flex items-center justify-center"
@@ -270,7 +273,7 @@ export default function Dashboard() {
               <CalendarPlus className="h-5 w-5 mr-2" />
               Create Event
             </Button>
-            
+
             <Button 
               className="min-h-[60px] flex items-center justify-center bg-accent hover:bg-accent/90 text-accent-foreground"
               onClick={() => setLocation("/attendance")}
