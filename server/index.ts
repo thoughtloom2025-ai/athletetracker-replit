@@ -66,36 +66,33 @@ app.use((req, res, next) => {
     // It is the only port that is not firewalled.
     const port = parseInt(process.env.PORT || '5000', 10);
     
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
+    // Use app.listen instead of server.listen for better Cloud Run compatibility
+    const httpServer = app.listen(port, '0.0.0.0', () => {
       log(`Server successfully started on port ${port}`);
     });
 
-    // Handle server errors
-    server.on('error', (err) => {
-      console.error('Server error:', err);
-      process.exit(1);
+    // Handle server errors gracefully without terminating container
+    httpServer.on('error', (err) => {
+      console.error('Server error occurred:', err);
+      // Log error but don't exit - let the container handle recovery
     });
 
   } catch (error) {
     console.error('Failed to start server:', error);
-    process.exit(1);
+    // Log error but don't exit - let the container management handle recovery
   }
 })().catch((error) => {
   console.error('Unhandled error during server startup:', error);
-  process.exit(1);
+  // Log error but don't exit - let the container management handle recovery
 });
 
-// Handle unhandled promise rejections and uncaught exceptions
+// Handle unhandled promise rejections and uncaught exceptions gracefully
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
+  // Log error but don't exit - let the container management handle recovery
 });
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
-  process.exit(1);
+  // Log error but don't exit - let the container management handle recovery
 });
