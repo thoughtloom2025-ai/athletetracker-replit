@@ -367,7 +367,7 @@ export default function RecordPerformance({ eventId }: RecordPerformanceProps) {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-4">
+                    <div className="space-y-3">
                       <div className="flex items-center space-x-2">
                         <Label htmlFor={`performance-${student.id}`} className="text-sm whitespace-nowrap">
                           Round {currentRound} Performance:
@@ -387,6 +387,7 @@ export default function RecordPerformance({ eventId }: RecordPerformanceProps) {
                         onClick={() => handleSavePerformance(student.id)}
                         disabled={savePerformanceMutation.isPending || !currentValue.trim()}
                         data-testid={`button-save-performance-${student.id}`}
+                        className="w-fit"
                       >
                         <Save className="h-4 w-4 mr-1" />
                         Save
