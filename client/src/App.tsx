@@ -15,6 +15,8 @@ import Events from "@/pages/events";
 import RecordPerformance from "@/pages/record-performance";
 import Attendance from "@/pages/attendance";
 import Reports from "@/pages/reports";
+import ParentInvites from "@/pages/parent-invites";
+import ParentJoin from "@/pages/parent-join";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -47,7 +49,14 @@ function Router() {
             </Route>
             <Route path="/attendance" component={Attendance} />
             <Route path="/reports" component={Reports} />
-            <Route component={NotFound} />
+            <Route path="/parent-invites" component={ParentInvites} />
+          </Switch>
+        </Layout>
+        
+        {/* Public routes (no layout) */}
+        <Switch>
+          <Route path="/parent-join" component={ParentJoin} />
+          <Route component={NotFound} />
           </Switch>
         </Layout>
       )}

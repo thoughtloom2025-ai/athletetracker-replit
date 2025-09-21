@@ -14,6 +14,7 @@ const navItems = [
   { path: "/events", label: "Events", icon: Calendar, testId: "nav-events" },
   { path: "/attendance", label: "Attendance", icon: ClipboardList, testId: "nav-attendance" },
   { path: "/reports", label: "Reports", icon: FileBarChart, testId: "nav-reports" },
+  { path: "/parent-invites", label: "Parent Invites", icon: Users, testId: "nav-parent-invites" },
 ];
 
 export function Navigation() {
@@ -27,7 +28,7 @@ export function Navigation() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path || (item.path === "/dashboard" && location === "/");
-            
+
             return (
               <Link key={item.path} href={item.path}>
                 <a className={cn(
@@ -51,7 +52,7 @@ export function Navigation() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path || (item.path === "/dashboard" && location === "/");
-            
+
             return (
               <Link key={item.path} href={item.path}>
                 <a className={cn(

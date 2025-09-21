@@ -108,6 +108,19 @@ export const performances = pgTable("performances", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Parent invites table
+export const parentInvites = pgTable("parent_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  coachId: varchar("coach_id").notNull().references(() => users.id),
+  inviteCode: varchar("invite_code", { length: 50 }).notNull().unique(),
+  parentName: varchar("parent_name", { length: 255 }).notNull(),
+  parentEmail: varchar("parent_email", { length: 255 }).notNull(),
+  studentName: varchar("student_name", { length: 255 }).notNull(),
+  phoneNumber: varchar("phone_number", { length: 50 }),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -140,6 +153,12 @@ export const insertPerformanceSchema = createInsertSchema(performances).omit({
   createdAt: true,
 });
 
+export const insertParentInviteSchema = createInsertSchema(parentInvites).omit({
+  id: true,
+  createdAt: true,
+  joinedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -151,3 +170,5 @@ export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type Attendance = typeof attendance.$inferSelect;
 export type InsertPerformance = z.infer<typeof insertPerformanceSchema>;
 export type Performance = typeof performances.$inferSelect;
+export type InsertParentInvite = z.infer<typeof insertParentInviteSchema>;
+export type ParentInvite = typeof parentInvites.$inferSelect;

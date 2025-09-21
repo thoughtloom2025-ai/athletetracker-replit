@@ -7,6 +7,7 @@ import {
   events,
   attendance,
   performances,
+  parentInvites,
   type User,
   type UpsertUser,
   type Student,
@@ -17,6 +18,8 @@ import {
   type InsertAttendance,
   type Performance,
   type InsertPerformance,
+  type InsertParentInvite,
+  type ParentInvite,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -47,6 +50,12 @@ export interface IStorage {
   recordPerformance(performance: InsertPerformance): Promise<Performance>;
   getStudentPerformances(studentId: string): Promise<Performance[]>;
   getEventPerformances(eventId: string): Promise<Performance[]>;
+
+  // Parent invite operations
+  getCoachInviteCode(coachId: string): Promise<string>;
+  addParentInvite(parentInvite: InsertParentInvite): Promise<ParentInvite>;
+  getParentInvites(coachId: string): Promise<ParentInvite[]>;
+  validateInviteCode(inviteCode: string): Promise<string | null>;
 
   // Dashboard stats
   getDashboardStats(coachId: string): Promise<{
@@ -276,6 +285,47 @@ export class PostgresStorage implements IStorage {
       .orderBy(asc(performances.rank));
   }
 
+  // Parent invite operations
+  async getCoachInviteCode(coachId: string): Promise<string> {
+    // Check if coach already has an invite code
+    const existingInvite = await db
+      .select({ inviteCode: parentInvites.inviteCode })
+      .from(parentInvites)
+      .where(eq(parentInvites.coachId, coachId))
+      .limit(1);
+
+    if (existingInvite.length > 0) {
+      return existingInvite[0].inviteCode;
+    }
+
+    // Generate a unique invite code for the coach
+    const inviteCode = `COACH-${coachId.substring(0, 8)}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    return inviteCode;
+  }
+
+  async addParentInvite(parentInvite: InsertParentInvite): Promise<ParentInvite> {
+    const [newParentInvite] = await db.insert(parentInvites).values(parentInvite).returning();
+    return newParentInvite;
+  }
+
+  async getParentInvites(coachId: string): Promise<ParentInvite[]> {
+    return await db
+      .select()
+      .from(parentInvites)
+      .where(eq(parentInvites.coachId, coachId))
+      .orderBy(desc(parentInvites.joinedAt));
+  }
+
+  async validateInviteCode(inviteCode: string): Promise<string | null> {
+    const result = await db
+      .select({ coachId: parentInvites.coachId })
+      .from(parentInvites)
+      .where(eq(parentInvites.inviteCode, inviteCode))
+      .limit(1);
+
+    return result.length > 0 ? result[0].coachId : null;
+  }
+
   // Dashboard stats
   async getDashboardStats(coachId: string): Promise<{
     totalStudents: number;
@@ -346,8 +396,8 @@ export class PostgresStorage implements IStorage {
 
     const totalAttendanceRecords = attendanceRecords.length;
     const presentCount = attendanceRecords.filter(record => record.present).length;
-    const averageAttendance = totalAttendanceRecords > 0 
-      ? Math.round((presentCount / totalAttendanceRecords) * 100) 
+    const averageAttendance = totalAttendanceRecords > 0
+      ? Math.round((presentCount / totalAttendanceRecords) * 100)
       : 0;
 
     return {

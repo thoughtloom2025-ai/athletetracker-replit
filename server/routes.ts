@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertStudentSchema, insertEventSchema, insertAttendanceSchema, insertPerformanceSchema } from "@shared/schema";
+import { insertStudentSchema, insertEventSchema, insertAttendanceSchema, insertPerformanceSchema, insertParentInviteSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -246,6 +246,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error recording performance:", error);
       res.status(400).json({ message: "Failed to record performance" });
+    }
+  });
+
+  // Parent invite routes
+  app.get('/api/parent-invites/code', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const inviteCode = await storage.getCoachInviteCode(userId);
+      res.json({ inviteCode });
+    } catch (error) {
+      console.error("Error getting invite code:", error);
+      res.status(500).json({ message: "Failed to get invite code" });
+    }
+  });
+
+  app.get('/api/parent-invites', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const parentInvites = await storage.getParentInvites(userId);
+      res.json(parentInvites);
+    } catch (error) {
+      console.error("Error fetching parent invites:", error);
+      res.status(500).json({ message: "Failed to fetch parent invites" });
+    }
+  });
+
+  app.post('/api/parent-invites', async (req: any, res) => {
+    try {
+      const { inviteCode, ...parentData } = req.body;
+      
+      // Validate invite code and get coach ID
+      const coachId = await storage.validateInviteCode(inviteCode);
+      if (!coachId) {
+        return res.status(400).json({ message: "Invalid invite code" });
+      }
+
+      const parentInviteData = insertParentInviteSchema.parse({
+        ...parentData,
+        coachId,
+        inviteCode,
+      });
+      
+      const parentInvite = await storage.addParentInvite(parentInviteData);
+      res.json(parentInvite);
+    } catch (error) {
+      console.error("Error adding parent invite:", error);
+      res.status(400).json({ message: "Failed to join using invite code" });
     }
   });
 
