@@ -23,35 +23,36 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
+
   // Student operations
   createStudent(student: InsertStudent): Promise<Student>;
   getStudents(coachId: string): Promise<Student[]>;
   getStudent(id: string): Promise<Student | undefined>;
   updateStudent(id: string, student: Partial<InsertStudent>): Promise<Student>;
   deleteStudent(id: string): Promise<void>;
-  
+
   // Event operations
   createEvent(event: InsertEvent): Promise<Event>;
   getEvents(coachId: string): Promise<Event[]>;
   getEvent(id: string): Promise<Event | undefined>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event>;
   deleteEvent(id: string): Promise<void>;
-  
+
   // Attendance operations
   markAttendance(attendanceData: InsertAttendance[]): Promise<Attendance[]>;
   getAttendance(coachId: string, date?: Date): Promise<Attendance[]>;
   getAttendanceByDateRange(coachId: string, startDate: Date, endDate: Date): Promise<Attendance[]>;
-  
+
   // Performance operations
   recordPerformance(performance: InsertPerformance): Promise<Performance>;
   getStudentPerformances(studentId: string): Promise<Performance[]>;
   getEventPerformances(eventId: string): Promise<Performance[]>;
-  
+
   // Dashboard stats
   getDashboardStats(coachId: string): Promise<{
     totalStudents: number;
     eventsThisWeek: number;
+    totalEvents: number;
     averageAttendance: number;
     personalBests: number;
   }>;
@@ -67,13 +68,13 @@ export class PostgresStorage implements IStorage {
   async upsertUser(userData: UpsertUser): Promise<User> {
     try {
       let existingUser: User | undefined;
-      
+
       // First try to find by ID if provided (Replit Auth provides sub as ID)
       if (userData.id) {
         const result = await db.select().from(users).where(eq(users.id, userData.id)).limit(1);
         existingUser = result[0];
       }
-      
+
       // Fallback to email lookup if no ID match and email is provided
       if (!existingUser && userData.email) {
         const result = await db.select().from(users).where(eq(users.email, userData.email)).limit(1);
@@ -136,7 +137,7 @@ export class PostgresStorage implements IStorage {
       })
       .where(eq(students.id, id))
       .returning();
-    
+
     if (!updatedStudent) {
       throw new Error('Student not found');
     }
@@ -175,7 +176,7 @@ export class PostgresStorage implements IStorage {
       })
       .where(eq(events.id, id))
       .returning();
-    
+
     if (!updatedEvent) {
       throw new Error('Event not found');
     }
@@ -185,7 +186,7 @@ export class PostgresStorage implements IStorage {
   async deleteEvent(id: string): Promise<void> {
     // First delete all performances associated with this event
     await db.delete(performances).where(eq(performances.eventId, id));
-    
+
     // Then delete the event itself
     await db.delete(events).where(eq(events.id, id));
   }
@@ -193,7 +194,7 @@ export class PostgresStorage implements IStorage {
   // Attendance operations
   async markAttendance(attendanceData: InsertAttendance[]): Promise<Attendance[]> {
     const results = [];
-    
+
     // Process each attendance record with atomic upsert using ON CONFLICT
     for (const data of attendanceData) {
       const [result] = await db
@@ -208,7 +209,7 @@ export class PostgresStorage implements IStorage {
           },
         })
         .returning();
-      
+
       results.push(result);
     }
     return results;
@@ -228,7 +229,7 @@ export class PostgresStorage implements IStorage {
         )
         .orderBy(desc(attendance.date));
     }
-    
+
     return await db
       .select()
       .from(attendance)
@@ -239,7 +240,7 @@ export class PostgresStorage implements IStorage {
   async getAttendanceByDateRange(coachId: string, startDate: Date, endDate: Date): Promise<Attendance[]> {
     const startStr = startDate.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
-    
+
     return await db
       .select()
       .from(attendance)
@@ -279,6 +280,7 @@ export class PostgresStorage implements IStorage {
   async getDashboardStats(coachId: string): Promise<{
     totalStudents: number;
     eventsThisWeek: number;
+    totalEvents: number;
     averageAttendance: number;
     personalBests: number;
   }> {
@@ -305,6 +307,12 @@ export class PostgresStorage implements IStorage {
           lte(events.date, weekEnd)
         )
       );
+
+    // Total events count
+    const [{ totalEvents }] = await db
+      .select({ totalEvents: count() })
+      .from(events)
+      .where(eq(events.coachId, coachId));
 
     // Personal bests count
     const [{ personalBests }] = await db
@@ -345,7 +353,8 @@ export class PostgresStorage implements IStorage {
     return {
       totalStudents: totalStudents || 0,
       eventsThisWeek: eventsThisWeek || 0,
-      averageAttendance,
+      totalEvents: totalEvents || 0,
+      averageAttendance: Math.round(averageAttendance || 0),
       personalBests: personalBests || 0,
     };
   }

@@ -92,10 +92,10 @@ export default function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-card-foreground" data-testid="text-events-this-week">
-                  {stats?.eventsThisWeek || 0}
+                <p className="text-2xl font-bold text-card-foreground" data-testid="text-total-events">
+                  {stats?.totalEvents || 0}
                 </p>
-                <p className="text-xs text-muted-foreground">Events This Week</p>
+                <p className="text-xs text-muted-foreground">Total Events</p>
               </div>
               <div className="h-8 w-8 bg-accent/10 rounded-lg flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-accent" />
