@@ -152,8 +152,8 @@ export default function ParentInvites() {
             </Button>
           </div>
           <div className="text-sm text-muted-foreground">
-            Share this link with parents who want to stay connected with their child's athletics progress.
-            This link is unique to you and stays the same.
+            This is your permanent coach invite link. When you create individual parent invites below, 
+            each parent will get a unique link that never expires and is specific to their child.
           </div>
         </CardContent>
       </Card>
@@ -216,7 +216,12 @@ export default function ParentInvites() {
                         )}
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          <span>Joined: {formatDate(parent.joinedAt?.toString() || '')}</span>
+                          <span>
+                            {parent.claimed 
+                              ? `Joined: ${formatDate(parent.claimedAt?.toString() || '')}` 
+                              : `Invite Code: ${parent.inviteCode}`
+                            }
+                          </span>
                         </div>
                       </div>
                     </div>

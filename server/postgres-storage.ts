@@ -334,24 +334,23 @@ export class PostgresStorage implements IStorage {
 
   // Parent invite operations
   async getCoachInviteCode(coachId: string): Promise<string> {
-    // Check if coach already has an invite code
-    const existingInvite = await db
-      .select({ inviteCode: parentInvites.inviteCode })
-      .from(parentInvites)
-      .where(eq(parentInvites.coachId, coachId))
-      .limit(1);
-
-    if (existingInvite.length > 0) {
-      return existingInvite[0].inviteCode;
-    }
-
-    // Generate a unique invite code for the coach
-    const inviteCode = `COACH-${coachId.substring(0, 8)}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    // Generate a permanent, unique invite code for the coach that doesn't expire
+    // This will be used as a base for parent-specific invites
+    const inviteCode = `COACH-${coachId.substring(0, 8)}-PERMANENT`;
     return inviteCode;
   }
 
   async addParentInvite(parentInvite: InsertParentInvite): Promise<ParentInvite> {
-    const [newParentInvite] = await db.insert(parentInvites).values(parentInvite).returning();
+    // Generate a unique invite code for each parent-student combination
+    const uniqueCode = `PARENT-${parentInvite.coachId.substring(0, 8)}-${parentInvite.studentId.substring(0, 8)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    
+    const parentInviteWithCode = {
+      ...parentInvite,
+      inviteCode: uniqueCode,
+      expiresAt: null // No expiration
+    };
+    
+    const [newParentInvite] = await db.insert(parentInvites).values(parentInviteWithCode).returning();
     return newParentInvite;
   }
 
@@ -379,8 +378,7 @@ export class PostgresStorage implements IStorage {
         coachId: parentInvites.coachId,
         studentId: parentInvites.studentId,
         inviteId: parentInvites.id,
-        claimed: parentInvites.claimed,
-        expiresAt: parentInvites.expiresAt
+        claimed: parentInvites.claimed
       })
       .from(parentInvites)
       .where(eq(parentInvites.inviteCode, inviteCode))
@@ -397,10 +395,7 @@ export class PostgresStorage implements IStorage {
       return null; // Invite already used
     }
 
-    // Check if invite is expired (if expiration is set)
-    if (invite.expiresAt && new Date() > invite.expiresAt) {
-      return null; // Invite expired
-    }
+    // No expiration check - invites are permanent
 
     return {
       coachId: invite.coachId,

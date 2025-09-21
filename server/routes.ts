@@ -496,6 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Parents cannot generate invite codes" });
       }
       
+      // Return a base invite code - actual parent invites will have unique codes
       const inviteCode = await storage.getCoachInviteCode(userId);
       res.json({ inviteCode });
     } catch (error) {
