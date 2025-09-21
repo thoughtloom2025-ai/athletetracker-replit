@@ -214,18 +214,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const parseExcelDate = (dateStr: string): Date => {
             const dateString = String(dateStr).trim();
             
+            // Handle Excel serial date numbers (common when Excel exports dates)
+            if (/^\d+$/.test(dateString)) {
+              const excelEpoch = new Date('1899-12-30'); // Excel's epoch
+              const daysSinceEpoch = parseInt(dateString);
+              const date = new Date(excelEpoch.getTime() + daysSinceEpoch * 24 * 60 * 60 * 1000);
+              return date;
+            }
+            
             // Check if it's in DD-MM-YYYY format (common in Excel)
             const ddmmyyyyPattern = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
             const match = dateString.match(ddmmyyyyPattern);
             
             if (match) {
-              // Convert DD-MM-YYYY to YYYY-MM-DD for proper parsing
+              // Convert DD-MM-YYYY to YYYY-MM-DD and create date in UTC to avoid timezone issues
               const [, day, month, year] = match;
-              return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+              const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              return new Date(isoString + 'T00:00:00.000Z');
             }
             
-            // Fall back to default Date parsing for other formats
-            return new Date(dateString);
+            // Check if it's in DD/MM/YYYY format
+            const ddmmyyyySlashPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+            const slashMatch = dateString.match(ddmmyyyySlashPattern);
+            
+            if (slashMatch) {
+              const [, day, month, year] = slashMatch;
+              const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              return new Date(isoString + 'T00:00:00.000Z');
+            }
+            
+            // Fall back to default Date parsing for other formats, but force UTC
+            const fallbackDate = new Date(dateString);
+            if (!isNaN(fallbackDate.getTime())) {
+              return new Date(fallbackDate.toISOString().split('T')[0] + 'T00:00:00.000Z');
+            }
+            
+            return fallbackDate;
           };
 
           const dateOfBirth = parseExcelDate(row.dateOfBirth);
@@ -271,6 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           importedCount++;
         } catch (error) {
+          console.error(`Import error for row ${i + 2}:`, error);
           errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
