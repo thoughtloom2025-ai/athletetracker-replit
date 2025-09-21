@@ -152,8 +152,8 @@ export default function ParentInvites() {
             </Button>
           </div>
           <div className="text-sm text-muted-foreground">
-            This is your permanent coach invite link. When you create individual parent invites below, 
-            each parent will get a unique link that never expires and is specific to their child.
+            This is your permanent coach invite link. All parents will use this same link to join 
+            your coaching program and connect to their children.
           </div>
         </CardContent>
       </Card>
@@ -219,7 +219,7 @@ export default function ParentInvites() {
                           <span>
                             {parent.claimed 
                               ? `Joined: ${formatDate(parent.claimedAt?.toString() || '')}` 
-                              : `Invite Code: ${parent.inviteCode}`
+                              : 'Invitation pending'
                             }
                           </span>
                         </div>

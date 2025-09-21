@@ -341,12 +341,12 @@ export class PostgresStorage implements IStorage {
   }
 
   async addParentInvite(parentInvite: InsertParentInvite): Promise<ParentInvite> {
-    // Generate a unique invite code for each parent-student combination
-    const uniqueCode = `PARENT-${parentInvite.coachId.substring(0, 8)}-${parentInvite.studentId.substring(0, 8)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    // Use the same fixed invite code for all parents of this coach
+    const coachInviteCode = await this.getCoachInviteCode(parentInvite.coachId);
     
     const parentInviteWithCode = {
       ...parentInvite,
-      inviteCode: uniqueCode,
+      inviteCode: coachInviteCode,
       expiresAt: null // No expiration
     };
     
@@ -373,6 +373,38 @@ export class PostgresStorage implements IStorage {
   }
 
   async validateInviteCode(inviteCode: string): Promise<{ coachId: string; studentId: string; inviteId: string } | null> {
+    // For fixed coach codes, extract coach ID and validate
+    if (inviteCode.startsWith('COACH-') && inviteCode.endsWith('-PERMANENT')) {
+      const coachIdFromCode = inviteCode.replace('COACH-', '').replace('-PERMANENT', '');
+      
+      // Check if this coach exists and has any parent invites
+      const result = await db
+        .select({ 
+          coachId: parentInvites.coachId,
+          studentId: parentInvites.studentId,
+          inviteId: parentInvites.id,
+          claimed: parentInvites.claimed
+        })
+        .from(parentInvites)
+        .where(eq(parentInvites.coachId, coachIdFromCode))
+        .limit(1);
+
+      if (result.length === 0) {
+        return null; // No invites found for this coach
+      }
+
+      // Return the first available (unclaimed) invite, or any invite if all are claimed
+      // This allows multiple parents to use the same code
+      const availableInvite = result.find(invite => !invite.claimed) || result[0];
+
+      return {
+        coachId: availableInvite.coachId,
+        studentId: availableInvite.studentId!,
+        inviteId: availableInvite.inviteId
+      };
+    }
+
+    // Fallback for any existing unique codes
     const result = await db
       .select({ 
         coachId: parentInvites.coachId,
@@ -385,17 +417,14 @@ export class PostgresStorage implements IStorage {
       .limit(1);
 
     if (result.length === 0) {
-      return null; // Invite code not found
+      return null;
     }
 
     const invite = result[0];
 
-    // Check if invite is already claimed
     if (invite.claimed) {
-      return null; // Invite already used
+      return null;
     }
-
-    // No expiration check - invites are permanent
 
     return {
       coachId: invite.coachId,
