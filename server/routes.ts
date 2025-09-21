@@ -210,12 +210,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
-          // Parse dates
-          const dateOfBirth = new Date(row.dateOfBirth);
-          const joiningDate = new Date(row.joiningDate);
+          // Parse dates - handle DD-MM-YYYY format for Excel imports
+          const parseExcelDate = (dateStr: string): Date => {
+            const dateString = String(dateStr).trim();
+            
+            // Check if it's in DD-MM-YYYY format (common in Excel)
+            const ddmmyyyyPattern = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
+            const match = dateString.match(ddmmyyyyPattern);
+            
+            if (match) {
+              // Convert DD-MM-YYYY to YYYY-MM-DD for proper parsing
+              const [, day, month, year] = match;
+              return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+            }
+            
+            // Fall back to default Date parsing for other formats
+            return new Date(dateString);
+          };
+
+          const dateOfBirth = parseExcelDate(row.dateOfBirth);
+          const joiningDate = parseExcelDate(row.joiningDate);
 
           if (isNaN(dateOfBirth.getTime()) || isNaN(joiningDate.getTime())) {
-            errors.push(`Row ${i + 2}: Invalid date format. Use YYYY-MM-DD or MM/DD/YYYY format`);
+            errors.push(`Row ${i + 2}: Invalid date format. Use DD-MM-YYYY format (e.g., 15-01-2005)`);
             continue;
           }
 

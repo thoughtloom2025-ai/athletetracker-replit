@@ -55,7 +55,7 @@ export default function Dashboard() {
         name: "John Doe",
         email: "john.doe@example.com",
         gender: "male",
-        dateOfBirth: "2005-01-15",
+        dateOfBirth: "15-01-2005",
         fatherName: "Robert Doe",
         motherName: "Jane Doe",
         phoneNumber: "1234567890",
@@ -66,13 +66,13 @@ export default function Dashboard() {
         previousCoachClub: "",
         injuryHealthIssues: "",
         medicalConditions: "",
-        joiningDate: "2024-01-15"
+        joiningDate: "15-01-2024"
       },
       {
         name: "Jane Smith",
         email: "",
         gender: "female",
-        dateOfBirth: "2006-03-22",
+        dateOfBirth: "22-03-2006",
         fatherName: "Mark Smith",
         motherName: "Lisa Smith",
         phoneNumber: "",
@@ -83,7 +83,7 @@ export default function Dashboard() {
         previousCoachClub: "City Athletics Club",
         injuryHealthIssues: "",
         medicalConditions: "",
-        joiningDate: "2024-02-01"
+        joiningDate: "01-02-2024"
       }
     ];
 
