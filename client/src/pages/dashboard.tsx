@@ -11,7 +11,8 @@ import {
   Plus,
   ClipboardList,
   CalendarPlus,
-  Activity
+  Activity,
+  UserPlus
 } from "lucide-react";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -143,7 +144,7 @@ export default function Dashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Button 
               className="min-h-[60px] flex items-center justify-center"
               onClick={() => setLocation("/students")}
@@ -170,6 +171,16 @@ export default function Dashboard() {
             >
               <ClipboardList className="h-5 w-5 mr-2" />
               Mark Attendance
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="min-h-[60px] flex items-center justify-center"
+              onClick={() => setLocation("/parent-invites")}
+              data-testid="button-parent-invites"
+            >
+              <UserPlus className="h-5 w-5 mr-2" />
+              Parent Invites
             </Button>
           </div>
         </CardContent>

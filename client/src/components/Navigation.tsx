@@ -14,7 +14,6 @@ const navItems = [
   { path: "/events", label: "Events", icon: Calendar, testId: "nav-events" },
   { path: "/attendance", label: "Attendance", icon: ClipboardList, testId: "nav-attendance" },
   { path: "/reports", label: "Reports", icon: FileBarChart, testId: "nav-reports" },
-  { path: "/parent-invites", label: "Parent Invites", icon: Users, testId: "nav-parent-invites" },
 ];
 
 export function Navigation() {
