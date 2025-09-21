@@ -204,7 +204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Validate gender
-          if (!['male', 'female', 'other'].includes(row.gender?.toLowerCase())) {
+          const gender = String(row.gender).toLowerCase().trim();
+          if (!['male', 'female', 'other'].includes(gender)) {
             errors.push(`Row ${i + 2}: Invalid gender value. Must be 'male', 'female', or 'other'`);
             continue;
           }
@@ -214,8 +215,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const joiningDate = new Date(row.joiningDate);
 
           if (isNaN(dateOfBirth.getTime()) || isNaN(joiningDate.getTime())) {
-            errors.push(`Row ${i + 2}: Invalid date format`);
+            errors.push(`Row ${i + 2}: Invalid date format. Use YYYY-MM-DD or MM/DD/YYYY format`);
             continue;
+          }
+
+          // Clean and validate phone number
+          let phoneNumber = null;
+          if (row.phoneNumber) {
+            phoneNumber = String(row.phoneNumber).trim();
+            // Allow empty string or null
+            if (phoneNumber === '' || phoneNumber === 'null' || phoneNumber === 'undefined') {
+              phoneNumber = null;
+            }
           }
 
           // Convert attendedCoachingBefore to boolean
@@ -223,20 +234,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Insert student (this only adds new students, doesn't delete existing ones)
           await db.insert(students).values({
-            name: row.name.trim(),
-            email: row.email?.trim() || null,
-            gender: row.gender.toLowerCase(),
+            name: String(row.name).trim(),
+            email: row.email ? String(row.email).trim() : null,
+            gender: gender,
             dateOfBirth: dateOfBirth.toISOString().split('T')[0],
-            fatherName: row.fatherName?.trim() || null,
-            motherName: row.motherName?.trim() || null,
-            phoneNumber: row.phoneNumber?.trim() || null,
-            address: row.address?.trim() || null,
-            school: row.school?.trim() || null,
-            gradeStudying: row.gradeStudying?.trim() || null,
+            fatherName: row.fatherName ? String(row.fatherName).trim() : null,
+            motherName: row.motherName ? String(row.motherName).trim() : null,
+            phoneNumber: phoneNumber,
+            address: row.address ? String(row.address).trim() : null,
+            school: row.school ? String(row.school).trim() : null,
+            gradeStudying: row.gradeStudying ? String(row.gradeStudying).trim() : null,
             attendedCoachingBefore,
-            previousCoachClub: row.previousCoachClub?.trim() || null,
-            injuryHealthIssues: row.injuryHealthIssues?.trim() || null,
-            medicalConditions: row.medicalConditions?.trim() || null,
+            previousCoachClub: row.previousCoachClub ? String(row.previousCoachClub).trim() : null,
+            injuryHealthIssues: row.injuryHealthIssues ? String(row.injuryHealthIssues).trim() : null,
+            medicalConditions: row.medicalConditions ? String(row.medicalConditions).trim() : null,
             joiningDate: joiningDate.toISOString().split('T')[0],
             coachId: req.user.claims.sub,
           });

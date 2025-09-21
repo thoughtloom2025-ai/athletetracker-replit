@@ -57,7 +57,7 @@ export default function Dashboard() {
         dateOfBirth: "2005-01-15",
         fatherName: "Robert Doe",
         motherName: "Jane Doe",
-        phoneNumber: "+1234567890",
+        phoneNumber: "1234567890",
         address: "123 Main St, City, State",
         school: "City High School",
         gradeStudying: "10th Grade",
@@ -66,6 +66,23 @@ export default function Dashboard() {
         injuryHealthIssues: "",
         medicalConditions: "",
         joiningDate: "2024-01-15"
+      },
+      {
+        name: "Jane Smith",
+        email: "",
+        gender: "female",
+        dateOfBirth: "2006-03-22",
+        fatherName: "Mark Smith",
+        motherName: "Lisa Smith",
+        phoneNumber: "",
+        address: "456 Oak Ave, Another City, State",
+        school: "Central School",
+        gradeStudying: "9th Grade",
+        attendedCoachingBefore: "true",
+        previousCoachClub: "City Athletics Club",
+        injuryHealthIssues: "",
+        medicalConditions: "",
+        joiningDate: "2024-02-01"
       }
     ];
 
@@ -121,8 +138,10 @@ export default function Dashboard() {
         fileInputRef.current.value = '';
       }
 
-      // Refresh the page or invalidate queries if needed
-      window.location.reload();
+      // Refresh the page or navigate to students page to see imported data
+      setTimeout(() => {
+        setLocation("/students");
+      }, 1500);
     } catch (error) {
       toast({
         title: "Import Failed",
