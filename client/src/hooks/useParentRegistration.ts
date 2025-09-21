@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
@@ -8,27 +9,33 @@ export function useParentRegistration() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [isCompleting, setIsCompleting] = useState(false);
+  const [hasCompletedRegistration, setHasCompletedRegistration] = useState(false);
 
   const completeMutation = useMutation({
-    mutationFn: async (parentData: any) => {
-      await apiRequest("POST", "/api/parent-invites/complete", parentData);
+    mutationFn: async (inviteCode: string) => {
+      return await apiRequest("POST", "/api/auth/complete-parent-registration", { inviteCode });
     },
     onSuccess: () => {
-      localStorage.removeItem('parentJoinData');
+      localStorage.removeItem('parentInviteCode');
+      setHasCompletedRegistration(true);
       toast({
         title: "Registration Complete!",
         description: "You've successfully joined the athletics program.",
       });
-      // Redirect to home or appropriate page
-      window.location.href = "/";
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2000);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Parent registration error:", error);
+      const errorMessage = error?.message || "Failed to complete registration. Please try again.";
       toast({
-        title: "Registration Error",
-        description: "Failed to complete registration. Please try again.",
+        title: "Registration Error", 
+        description: errorMessage,
         variant: "destructive",
       });
-      localStorage.removeItem('parentJoinData');
+      localStorage.removeItem('parentInviteCode');
     },
     onSettled: () => {
       setIsCompleting(false);
@@ -36,22 +43,20 @@ export function useParentRegistration() {
   });
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading && !isCompleting) {
-      const parentData = localStorage.getItem('parentJoinData');
-      if (parentData) {
-        try {
-          const data = JSON.parse(parentData);
-          setIsCompleting(true);
-          completeMutation.mutate(data);
-        } catch (error) {
-          console.error('Failed to parse parent join data:', error);
-          localStorage.removeItem('parentJoinData');
-        }
+    // Check if there's a pending parent registration after authentication
+    if (isAuthenticated && !isLoading && !hasCompletedRegistration) {
+      const inviteCode = localStorage.getItem('parentInviteCode');
+      
+      if (inviteCode && !isCompleting) {
+        setIsCompleting(true);
+        completeMutation.mutate(inviteCode);
       }
     }
-  }, [isAuthenticated, isLoading, isCompleting]);
+  }, [isAuthenticated, isLoading, hasCompletedRegistration, isCompleting]);
 
   return {
     isCompleting: isCompleting || completeMutation.isPending,
+    hasCompletedRegistration,
+    completeMutation,
   };
 }

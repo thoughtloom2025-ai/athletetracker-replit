@@ -32,6 +32,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-complete parent registration endpoint
+  app.post('/api/auth/complete-parent-registration', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { inviteCode } = req.body;
+      
+      if (!inviteCode) {
+        return res.status(400).json({ message: "Invite code is required" });
+      }
+      
+      // Validate invite code using secure validation
+      const inviteValidation = await storage.validateInviteCode(inviteCode);
+      if (!inviteValidation) {
+        return res.status(400).json({ 
+          message: "Invalid, expired, or already used invite code" 
+        });
+      }
+
+      const { coachId, studentId, inviteId } = inviteValidation;
+
+      // Update user role to parent
+      await storage.updateUserRole(userId, 'parent');
+
+      // Claim the invite (this marks it as used and links to the parent)
+      const claimedInvite = await storage.claimInvite(inviteId, userId);
+      if (!claimedInvite) {
+        return res.status(400).json({ 
+          message: "Invite has already been claimed by another user" 
+        });
+      }
+
+      res.json({
+        message: "Parent registration completed successfully",
+        studentId,
+        coachId,
+        parentInvite: claimedInvite
+      });
+    } catch (error) {
+      console.error("Error completing parent registration:", error);
+      res.status(400).json({ message: "Failed to complete parent registration" });
+    }
+  });
+
   // Logout is handled by setupAuth in replitAuth.ts
 
   // Dashboard stats

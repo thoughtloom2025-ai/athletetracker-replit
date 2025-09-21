@@ -356,11 +356,21 @@ export class PostgresStorage implements IStorage {
   }
 
   async getParentInvites(coachId: string): Promise<ParentInvite[]> {
-    return await db
-      .select()
-      .from(parentInvites)
-      .where(eq(parentInvites.coachId, coachId))
-      .orderBy(desc(parentInvites.joinedAt));
+    console.log("Getting parent invites for coach:", coachId);
+
+    try {
+      const result = await db
+        .select()
+        .from(parentInvites)
+        .where(eq(parentInvites.coachId, coachId))
+        .orderBy(desc(parentInvites.createdAt));
+
+      console.log("Parent invites result:", result);
+      return result;
+    } catch (error) {
+      console.error("Error fetching parent invites:", error);
+      throw error;
+    }
   }
 
   async validateInviteCode(inviteCode: string): Promise<{ coachId: string; studentId: string; inviteId: string } | null> {

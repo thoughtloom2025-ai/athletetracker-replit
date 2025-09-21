@@ -1,83 +1,41 @@
-
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Users, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { z } from "zod";
-import { Users, CheckCircle } from "lucide-react";
-
-const parentJoinSchema = z.object({
-  parentName: z.string().min(1, "Parent name is required"),
-  parentEmail: z.string().email("Please enter a valid email"),
-  studentName: z.string().min(1, "Student name is required"),
-  phoneNumber: z.string().optional(),
-});
 
 export default function ParentJoin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [inviteCode, setInviteCode] = useState("");
+  const [isValidating, setIsValidating] = useState(true);
+  const [isValidCode, setIsValidCode] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [showAuthStep, setShowAuthStep] = useState(false);
-
-  const form = useForm<z.infer<typeof parentJoinSchema>>({
-    resolver: zodResolver(parentJoinSchema),
-    defaultValues: {
-      parentName: "",
-      parentEmail: "",
-      studentName: "",
-      phoneNumber: "",
-    },
-  });
 
   useEffect(() => {
     // Get invite code from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+
     if (code) {
       setInviteCode(code);
-    }
-  }, []);
-
-  const joinMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof parentJoinSchema>) => {
-      // Store parent data in localStorage for use after authentication
-      localStorage.setItem('parentJoinData', JSON.stringify({
-        ...data,
-        inviteCode,
-      }));
-      setShowAuthStep(true);
-    },
-    onSuccess: () => {
-      // Mutation success just means data was stored locally
-    },
-    onError: (error) => {
+      // Store invite code in localStorage for use after authentication
+      localStorage.setItem('parentInviteCode', code);
+      setIsValidCode(true);
+    } else {
       toast({
         title: "Error",
-        description: "Failed to process parent information.",
+        description: "Invalid invite link. Please use the link provided by your coach.",
         variant: "destructive",
       });
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof parentJoinSchema>) => {
-    if (!inviteCode) {
-      toast({
-        title: "Error",
-        description: "Invalid invite code. Please use the link provided by your coach.",
-        variant: "destructive",
-      });
-      return;
     }
-    joinMutation.mutate(data);
+    setIsValidating(false);
+  }, [toast]);
+
+  const handleGoogleSignIn = () => {
+    // Redirect to Google authentication
+    window.location.href = "/api/login";
   };
 
   if (isSuccess) {
@@ -93,7 +51,7 @@ export default function ParentJoin() {
               You've successfully joined the athletics coaching program. The coach will be able to share updates about your child's progress.
             </p>
             <Button onClick={() => setLocation("/")} className="w-full">
-              Close
+              Continue to Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -101,34 +59,38 @@ export default function ParentJoin() {
     );
   }
 
-  if (showAuthStep) {
+  if (isValidating) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Sign In with Google</CardTitle>
+          <CardContent className="text-center py-12">
+            <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
+            <h2 className="text-xl font-semibold mb-2">Validating Invite...</h2>
             <p className="text-muted-foreground">
-              To complete your registration and access your child's athletics progress, please sign in with your Google account.
+              Please wait while we validate your invite link.
             </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              onClick={() => window.location.href = "/api/login"}
-              className="w-full"
-              data-testid="button-signin-google"
-            >
-              Sign In with Google
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setShowAuthStep(false)}
-              className="w-full"
-              data-testid="button-back"
-            >
-              Back to Form
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isValidCode) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-12">
+            <div className="h-12 w-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="h-6 w-6 text-destructive" />
+            </div>
+            <h2 className="text-xl font-semibold text-destructive mb-2">
+              Invalid Invite Link
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              This invite link is not valid. Please contact your coach for a new invite link.
+            </p>
+            <Button variant="outline" onClick={() => setLocation("/")} className="w-full">
+              Go to Home
             </Button>
           </CardContent>
         </Card>
@@ -145,90 +107,27 @@ export default function ParentJoin() {
           </div>
           <CardTitle className="text-2xl">Join Athletics Program</CardTitle>
           <p className="text-muted-foreground">
-            Connect with your child's coach to stay updated on their athletic progress.
+            Sign in with Google to connect with your child's coach and stay updated on their athletic progress.
           </p>
         </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="parentName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Full Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <CardContent className="space-y-4">
+          <div className="bg-muted p-3 rounded text-sm text-center">
+            <p className="text-muted-foreground mb-1">Invite Code:</p>
+            <div className="font-mono text-sm">{inviteCode}</div>
+          </div>
 
-              <FormField
-                control={form.control}
-                name="parentEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address *</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter your email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <Button 
+            onClick={handleGoogleSignIn}
+            className="w-full"
+            data-testid="button-signin-google"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Sign In with Google
+          </Button>
 
-              <FormField
-                control={form.control}
-                name="studentName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Child's Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your child's name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your phone number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {inviteCode && (
-                <div className="bg-muted p-3 rounded text-sm">
-                  <Label className="text-muted-foreground">Invite Code:</Label>
-                  <div className="font-mono">{inviteCode}</div>
-                </div>
-              )}
-
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={joinMutation.isPending || !inviteCode}
-              >
-                {joinMutation.isPending ? "Joining..." : "Join Program"}
-              </Button>
-
-              {!inviteCode && (
-                <p className="text-sm text-destructive text-center">
-                  Invalid invite link. Please use the link provided by your coach.
-                </p>
-              )}
-            </form>
-          </Form>
+          <p className="text-xs text-muted-foreground text-center">
+            By signing in, you'll be connected to your child's athletics program and can view their progress updates.
+          </p>
         </CardContent>
       </Card>
     </div>
