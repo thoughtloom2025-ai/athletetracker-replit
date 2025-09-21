@@ -26,6 +26,7 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserRole(id: string, role: string): Promise<User>;
 
   // Student operations
   createStudent(student: InsertStudent): Promise<Student>;
@@ -116,6 +117,22 @@ export class PostgresStorage implements IStorage {
       console.error('Error upserting user:', error);
       throw error;
     }
+  }
+
+  async updateUserRole(id: string, role: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        role,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+    return updatedUser;
   }
 
   // Student operations

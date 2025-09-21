@@ -26,6 +26,7 @@ export default function ParentJoin() {
   const { toast } = useToast();
   const [inviteCode, setInviteCode] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showAuthStep, setShowAuthStep] = useState(false);
 
   const form = useForm<z.infer<typeof parentJoinSchema>>({
     resolver: zodResolver(parentJoinSchema),
@@ -48,22 +49,20 @@ export default function ParentJoin() {
 
   const joinMutation = useMutation({
     mutationFn: async (data: z.infer<typeof parentJoinSchema>) => {
-      await apiRequest("POST", "/api/parent-invites", {
+      // Store parent data in localStorage for use after authentication
+      localStorage.setItem('parentJoinData', JSON.stringify({
         ...data,
         inviteCode,
-      });
+      }));
+      setShowAuthStep(true);
     },
     onSuccess: () => {
-      setIsSuccess(true);
-      toast({
-        title: "Successfully Joined!",
-        description: "You've been connected to the coaching program.",
-      });
+      // Mutation success just means data was stored locally
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to join using the invite code. Please check the code and try again.",
+        description: "Failed to process parent information.",
         variant: "destructive",
       });
     },
@@ -95,6 +94,41 @@ export default function ParentJoin() {
             </p>
             <Button onClick={() => setLocation("/")} className="w-full">
               Close
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (showAuthStep) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Sign In with Google</CardTitle>
+            <p className="text-muted-foreground">
+              To complete your registration and access your child's athletics progress, please sign in with your Google account.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button 
+              onClick={() => window.location.href = "/api/login"}
+              className="w-full"
+              data-testid="button-signin-google"
+            >
+              Sign In with Google
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setShowAuthStep(false)}
+              className="w-full"
+              data-testid="button-back"
+            >
+              Back to Form
             </Button>
           </CardContent>
         </Card>

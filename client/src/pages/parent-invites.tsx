@@ -24,12 +24,12 @@ export default function ParentInvites() {
   const { toast } = useToast();
   const [inviteLink, setInviteLink] = useState("");
 
-  const { data: inviteCode } = useQuery({
+  const { data: inviteCode } = useQuery<{ inviteCode: string }>({
     queryKey: ["/api/parent-invites/code"],
     enabled: isAuthenticated,
   });
 
-  const { data: parentInvites = [], isLoading: parentInvitesLoading } = useQuery({
+  const { data: parentInvites = [], isLoading: parentInvitesLoading } = useQuery<ParentInvite[]>({
     queryKey: ["/api/parent-invites"],
     enabled: isAuthenticated,
   });
@@ -216,7 +216,7 @@ export default function ParentInvites() {
                         )}
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          <span>Joined: {formatDate(parent.joinedAt!)}</span>
+                          <span>Joined: {formatDate(parent.joinedAt?.toString() || '')}</span>
                         </div>
                       </div>
                     </div>

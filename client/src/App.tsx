@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
+import { useParentRegistration } from "@/hooks/useParentRegistration";
 import { Layout } from "@/components/Layout";
 
 // Pages
@@ -22,13 +23,16 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { isCompleting } = useParentRegistration();
 
-  if (isLoading) {
+  if (isLoading || isCompleting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="h-8 w-8 bg-primary rounded-lg animate-pulse mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">
+            {isCompleting ? "Completing registration..." : "Loading..."}
+          </p>
         </div>
       </div>
     );

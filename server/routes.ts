@@ -296,6 +296,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete parent registration after authentication
+  app.post('/api/parent-invites/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { inviteCode, ...parentData } = req.body;
+      
+      // Validate invite code and get coach ID
+      const coachId = await storage.validateInviteCode(inviteCode);
+      if (!coachId) {
+        return res.status(400).json({ message: "Invalid invite code" });
+      }
+
+      // Update user role to parent
+      await storage.updateUserRole(userId, 'parent');
+
+      // Create parent invite record
+      const parentInviteData = insertParentInviteSchema.parse({
+        ...parentData,
+        coachId,
+        inviteCode,
+      });
+      
+      const parentInvite = await storage.addParentInvite(parentInviteData);
+      res.json(parentInvite);
+    } catch (error) {
+      console.error("Error completing parent registration:", error);
+      res.status(400).json({ message: "Failed to complete parent registration" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
