@@ -113,7 +113,7 @@ export default function Dashboard() {
       
       toast({
         title: "Import Successful",
-        description: `Successfully imported ${result.count} students.`,
+        description: `Successfully added ${result.count} new students. Existing students were not affected.`,
       });
 
       // Reset file input

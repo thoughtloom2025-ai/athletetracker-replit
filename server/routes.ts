@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Convert attendedCoachingBefore to boolean
           const attendedCoachingBefore = row.attendedCoachingBefore === 'true' || row.attendedCoachingBefore === true;
 
-          // Insert student
+          // Insert student (this only adds new students, doesn't delete existing ones)
           await db.insert(students).values({
             name: row.name.trim(),
             email: row.email?.trim() || null,
@@ -238,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             injuryHealthIssues: row.injuryHealthIssues?.trim() || null,
             medicalConditions: row.medicalConditions?.trim() || null,
             joiningDate: joiningDate.toISOString().split('T')[0],
-            coachId: req.user!.id,
+            coachId: req.user.claims.sub,
           });
 
           importedCount++;
