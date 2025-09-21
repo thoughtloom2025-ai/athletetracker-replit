@@ -20,7 +20,8 @@ import {
   Clock,
   Trophy,
   FileText,
-  Trash2
+  Trash2,
+  Target
 } from "lucide-react";
 import { EventForm } from "@/components/EventForm";
 import type { Event, Student, Performance } from "@shared/schema";
