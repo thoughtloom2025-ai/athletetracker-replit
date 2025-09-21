@@ -132,6 +132,14 @@ export default function Students() {
     return age;
   };
 
+  const formatDateToDDMMYYYY = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00'); // Add time to ensure consistent parsing
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const handleDeleteStudent = (studentId: string) => {
     if (window.confirm("Are you sure you want to delete this student?")) {
       deleteMutation.mutate(studentId);
@@ -335,7 +343,7 @@ export default function Students() {
                         {student.gradeStudying || "-"}
                       </td>
                       <td className="px-6 py-4 text-sm text-card-foreground hidden lg:table-cell" data-testid={`text-student-joined-${student.id}`}>
-                        {new Date(student.joiningDate).toLocaleDateString()}
+                        {formatDateToDDMMYYYY(student.joiningDate)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
@@ -404,7 +412,7 @@ export default function Students() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                    <p className="text-sm">{new Date(viewingStudent.dateOfBirth).toLocaleDateString()}</p>
+                    <p className="text-sm">{formatDateToDDMMYYYY(viewingStudent.dateOfBirth)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Age</label>
@@ -463,7 +471,7 @@ export default function Students() {
                   )}
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Joining Date</label>
-                    <p className="text-sm">{new Date(viewingStudent.joiningDate).toLocaleDateString()}</p>
+                    <p className="text-sm">{formatDateToDDMMYYYY(viewingStudent.joiningDate)}</p>
                   </div>
                 </div>
               </div>
