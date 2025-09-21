@@ -25,6 +25,7 @@ export default function Dashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: stats } = useQuery({
