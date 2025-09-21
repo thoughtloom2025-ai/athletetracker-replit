@@ -11,17 +11,21 @@ import {
   Plus,
   ClipboardList,
   CalendarPlus,
-  Activity
+  Activity,
+  Download,
+  Upload
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useLocation } from "wouter";
+import * as XLSX from 'xlsx';
 
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: stats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
@@ -42,6 +46,91 @@ export default function Dashboard() {
       return;
     }
   }, [isAuthenticated, isLoading, toast]);
+
+  const downloadExcelTemplate = () => {
+    // Create a sample Excel template
+    const template = [
+      {
+        name: "John Doe",
+        email: "john.doe@example.com",
+        gender: "male",
+        dateOfBirth: "2005-01-15",
+        fatherName: "Robert Doe",
+        motherName: "Jane Doe",
+        phoneNumber: "+1234567890",
+        address: "123 Main St, City, State",
+        school: "City High School",
+        gradeStudying: "10th Grade",
+        attendedCoachingBefore: "false",
+        previousCoachClub: "",
+        injuryHealthIssues: "",
+        medicalConditions: "",
+        joiningDate: "2024-01-15"
+      }
+    ];
+
+    // Convert to worksheet
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Students Template");
+
+    // Download the file
+    XLSX.writeFile(wb, "students_import_template.xlsx");
+    
+    toast({
+      title: "Template Downloaded",
+      description: "Excel template has been downloaded successfully.",
+    });
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast({
+        title: "Invalid File",
+        description: "Please upload an Excel file (.xlsx or .xls)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/students/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to import students');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "Import Successful",
+        description: `Successfully imported ${result.count} students.`,
+      });
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      // Refresh the page or invalidate queries if needed
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: "Failed to import students. Please check the file format and try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -143,7 +232,7 @@ export default function Dashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <Button 
               className="min-h-[60px] flex items-center justify-center"
               onClick={() => setLocation("/students")}
@@ -171,7 +260,35 @@ export default function Dashboard() {
               <ClipboardList className="h-5 w-5 mr-2" />
               Mark Attendance
             </Button>
+
+            <Button 
+              variant="outline" 
+              className="min-h-[60px] flex items-center justify-center"
+              onClick={downloadExcelTemplate}
+              data-testid="button-download-template"
+            >
+              <Download className="h-5 w-5 mr-2" />
+              Download Template
+            </Button>
+
+            <Button 
+              variant="outline" 
+              className="min-h-[60px] flex items-center justify-center"
+              onClick={() => fileInputRef.current?.click()}
+              data-testid="button-import-students"
+            >
+              <Upload className="h-5 w-5 mr-2" />
+              Import Students
+            </Button>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+            data-testid="file-input-import"
+          />
         </CardContent>
       </Card>
 

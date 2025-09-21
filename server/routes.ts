@@ -5,7 +5,15 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertStudentSchema, insertEventSchema, insertAttendanceSchema, insertPerformanceSchema, insertParentInviteSchema, students } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
+import multer from 'multer';
+import * as XLSX from 'xlsx';
+
+// Configure multer for file upload
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
@@ -15,7 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Basic API status endpoint  
+  // Basic API status endpoint
   app.get('/api', (_req, res) => {
     res.status(200).json({ status: 'ok', message: 'API is running' });
   });
@@ -37,16 +45,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { inviteCode } = req.body;
-      
+
       if (!inviteCode) {
         return res.status(400).json({ message: "Invite code is required" });
       }
-      
+
       // Validate invite code using secure validation
       const inviteValidation = await storage.validateInviteCode(inviteCode);
       if (!inviteValidation) {
-        return res.status(400).json({ 
-          message: "Invalid, expired, or already used invite code" 
+        return res.status(400).json({
+          message: "Invalid, expired, or already used invite code"
         });
       }
 
@@ -58,8 +66,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Claim the invite (this marks it as used and links to the parent)
       const claimedInvite = await storage.claimInvite(inviteId, userId);
       if (!claimedInvite) {
-        return res.status(400).json({ 
-          message: "Invite has already been claimed by another user" 
+        return res.status(400).json({
+          message: "Invite has already been claimed by another user"
         });
       }
 
@@ -94,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -106,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Coach or admin can see all their students
         students = await storage.getStudents(userId);
       }
-      
+
       res.json(students);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -118,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       // Only coaches can create students
       if (user?.role === 'parent') {
         return res.status(403).json({ message: "Parents cannot create students" });
@@ -133,12 +141,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/students/:id', isAuthenticated, async (req: any, res) => {
+  // Get student by ID
+  app.get("/api/students/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const student = await storage.getStudent(req.params.id);
-      
+
       if (!student) {
         return res.status(404).json({ message: "Student not found" });
       }
@@ -164,12 +173,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import students from Excel file
+  app.post("/api/students/import", isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Parse Excel file
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data.length) {
+        return res.status(400).json({ message: "Excel file is empty" });
+      }
+
+      let importedCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i] as any;
+
+        try {
+          // Validate required fields
+          if (!row.name || !row.gender || !row.dateOfBirth || !row.joiningDate) {
+            errors.push(`Row ${i + 2}: Missing required fields (name, gender, dateOfBirth, joiningDate)`);
+            continue;
+          }
+
+          // Validate gender
+          if (!['male', 'female', 'other'].includes(row.gender?.toLowerCase())) {
+            errors.push(`Row ${i + 2}: Invalid gender value. Must be 'male', 'female', or 'other'`);
+            continue;
+          }
+
+          // Parse dates
+          const dateOfBirth = new Date(row.dateOfBirth);
+          const joiningDate = new Date(row.joiningDate);
+
+          if (isNaN(dateOfBirth.getTime()) || isNaN(joiningDate.getTime())) {
+            errors.push(`Row ${i + 2}: Invalid date format`);
+            continue;
+          }
+
+          // Convert attendedCoachingBefore to boolean
+          const attendedCoachingBefore = row.attendedCoachingBefore === 'true' || row.attendedCoachingBefore === true;
+
+          // Insert student
+          await db.insert(students).values({
+            name: row.name.trim(),
+            email: row.email?.trim() || null,
+            gender: row.gender.toLowerCase(),
+            dateOfBirth: dateOfBirth.toISOString().split('T')[0],
+            fatherName: row.fatherName?.trim() || null,
+            motherName: row.motherName?.trim() || null,
+            phoneNumber: row.phoneNumber?.trim() || null,
+            address: row.address?.trim() || null,
+            school: row.school?.trim() || null,
+            gradeStudying: row.gradeStudying?.trim() || null,
+            attendedCoachingBefore,
+            previousCoachClub: row.previousCoachClub?.trim() || null,
+            injuryHealthIssues: row.injuryHealthIssues?.trim() || null,
+            medicalConditions: row.medicalConditions?.trim() || null,
+            joiningDate: joiningDate.toISOString().split('T')[0],
+            coachId: req.user!.id,
+          });
+
+          importedCount++;
+        } catch (error) {
+          errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      res.json({
+        count: importedCount,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Successfully imported ${importedCount} students${errors.length > 0 ? ` with ${errors.length} errors` : ''}`
+      });
+
+    } catch (error) {
+      console.error("Error importing students:", error);
+      res.status(500).json({ message: "Failed to import students" });
+    }
+  });
+
   app.put('/api/students/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const existingStudent = await storage.getStudent(req.params.id);
-      
+
       if (!existingStudent) {
         return res.status(404).json({ message: "Student not found" });
       }
@@ -195,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const existingStudent = await storage.getStudent(req.params.id);
-      
+
       if (!existingStudent) {
         return res.status(404).json({ message: "Student not found" });
       }
@@ -231,18 +326,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       // Only coaches can create events
       if (user?.role === 'parent') {
         return res.status(403).json({ message: "Parents cannot create events" });
       }
-      
+
       // Convert date string from frontend to Date object for backend validation
       const requestData = { ...req.body, coachId: userId };
       if (requestData.date && typeof requestData.date === 'string') {
         requestData.date = new Date(requestData.date);
       }
-      
+
       const eventData = insertEventSchema.parse(requestData);
       const event = await storage.createEvent(eventData);
       res.json(event);
@@ -261,7 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const event = await storage.getEvent(req.params.id);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
@@ -285,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const existingEvent = await storage.getEvent(req.params.id);
-      
+
       if (!existingEvent) {
         return res.status(404).json({ message: "Event not found" });
       }
@@ -302,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (requestData.date && typeof requestData.date === 'string') {
         requestData.date = new Date(requestData.date);
       }
-      
+
       const eventData = insertEventSchema.partial().parse(requestData);
       const event = await storage.updateEvent(req.params.id, eventData);
       res.json(event);
@@ -317,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const existingEvent = await storage.getEvent(req.params.id);
-      
+
       if (!existingEvent) {
         return res.status(404).json({ message: "Event not found" });
       }
@@ -342,12 +437,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { date, startDate, endDate } = req.query;
-      
+
       let attendance;
       if (startDate && endDate) {
         attendance = await storage.getAttendanceByDateRange(
-          userId, 
-          new Date(startDate as string), 
+          userId,
+          new Date(startDate as string),
           new Date(endDate as string)
         );
       } else if (date) {
@@ -355,7 +450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         attendance = await storage.getAttendance(userId);
       }
-      
+
       res.json(attendance);
     } catch (error) {
       console.error("Error fetching attendance:", error);
@@ -367,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       // Only coaches can mark attendance
       if (user?.role === 'parent') {
         return res.status(403).json({ message: "Parents cannot mark attendance" });
@@ -381,8 +476,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const item of attendanceData) {
         const student = await storage.getStudent(item.studentId);
         if (!student || student.coachId !== userId) {
-          return res.status(403).json({ 
-            message: "Access denied - you can only mark attendance for your own students" 
+          return res.status(403).json({
+            message: "Access denied - you can only mark attendance for your own students"
           });
         }
       }
@@ -401,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const student = await storage.getStudent(req.params.studentId);
-      
+
       if (!student) {
         return res.status(404).json({ message: "Student not found" });
       }
@@ -433,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const event = await storage.getEvent(req.params.eventId);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
@@ -457,22 +552,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       // Only coaches can create performance records
       if (user?.role === 'parent') {
         return res.status(403).json({ message: "Parents cannot create performance records" });
       }
 
       const performanceData = insertPerformanceSchema.parse(req.body);
-      
+
       // Verify the coach owns both the student and the event
       const student = await storage.getStudent(performanceData.studentId);
       const event = await storage.getEvent(performanceData.eventId);
-      
+
       if (!student || !event) {
         return res.status(400).json({ message: "Invalid student or event ID" });
       }
-      
+
       if (student.coachId !== userId || event.coachId !== userId) {
         return res.status(403).json({ message: "Access denied - you can only record performances for your own students and events" });
       }
@@ -490,12 +585,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       // Only coaches can get invite codes
       if (user?.role === 'parent') {
         return res.status(403).json({ message: "Parents cannot generate invite codes" });
       }
-      
+
       // Return a base invite code - actual parent invites will have unique codes
       const inviteCode = await storage.getCoachInviteCode(userId);
       res.json({ inviteCode });
@@ -520,27 +615,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       // Only coaches can create parent invites
       if (user?.role === 'parent') {
         return res.status(403).json({ message: "Parents cannot create parent invites" });
       }
-      
+
       // If studentId is provided, verify it belongs to this coach
       if (req.body.studentId) {
         const student = await storage.getStudent(req.body.studentId);
         if (!student || student.coachId !== userId) {
-          return res.status(403).json({ 
-            message: "Access denied - you can only create invites for your own students" 
+          return res.status(403).json({
+            message: "Access denied - you can only create invites for your own students"
           });
         }
       }
-      
+
       const parentInviteData = insertParentInviteSchema.parse({
         ...req.body,
         coachId: userId
       });
-      
+
       const parentInvite = await storage.addParentInvite(parentInviteData);
       res.json(parentInvite);
     } catch (error) {
@@ -554,12 +649,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { inviteCode } = req.body;
-      
+
       // Validate invite code using secure validation
       const inviteValidation = await storage.validateInviteCode(inviteCode);
       if (!inviteValidation) {
-        return res.status(400).json({ 
-          message: "Invalid, expired, or already used invite code" 
+        return res.status(400).json({
+          message: "Invalid, expired, or already used invite code"
         });
       }
 
@@ -571,8 +666,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Claim the invite (this marks it as used and links to the parent)
       const claimedInvite = await storage.claimInvite(inviteId, userId);
       if (!claimedInvite) {
-        return res.status(400).json({ 
-          message: "Invite has already been claimed by another user" 
+        return res.status(400).json({
+          message: "Invite has already been claimed by another user"
         });
       }
 
