@@ -594,14 +594,15 @@ export default function Events() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 mt-4 sm:mt-0">
+                  <div className="flex items-center gap-1 mt-4 sm:mt-0 flex-wrap">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleEditEvent(event)}
                       data-testid={`button-edit-event-${event.id}`}
+                      className="text-xs px-2"
                     >
-                      <Edit className="h-4 w-4 mr-1" />
+                      <Edit className="h-3 w-3 mr-1" />
                       Edit
                     </Button>
                     
@@ -611,8 +612,9 @@ export default function Events() {
                       onClick={() => handleDeleteEvent(event.id, event.name)}
                       disabled={deleteEventMutation.isPending}
                       data-testid={`button-delete-event-${event.id}`}
+                      className="text-xs px-2"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
+                      <Trash2 className="h-3 w-3 mr-1" />
                       Delete
                     </Button>
                     
@@ -623,9 +625,10 @@ export default function Events() {
                           size="sm"
                           onClick={() => handleViewResults(event)}
                           data-testid={`button-view-results-${event.id}`}
+                          className="text-xs px-2"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Results
+                          <Eye className="h-3 w-3 mr-1" />
+                          Results
                         </Button>
                       </>
                     ) : event.status === "in_progress" ? (
@@ -633,8 +636,9 @@ export default function Events() {
                         size="sm"
                         onClick={() => handleRecordEvent(event.id)}
                         data-testid={`button-record-event-${event.id}`}
+                        className="text-xs px-2"
                       >
-                        <FileText className="h-4 w-4 mr-1" />
+                        <FileText className="h-3 w-3 mr-1" />
                         Record
                       </Button>
                     ) : (
@@ -643,9 +647,10 @@ export default function Events() {
                         onClick={() => handleStartEvent(event.id)}
                         disabled={startEventMutation.isPending}
                         data-testid={`button-start-event-${event.id}`}
+                        className="text-xs px-2"
                       >
-                        <Play className="h-4 w-4 mr-1" />
-                        Start Event
+                        <Play className="h-3 w-3 mr-1" />
+                        Start
                       </Button>
                     )}
                   </div>
