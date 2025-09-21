@@ -112,12 +112,16 @@ export const performances = pgTable("performances", {
 export const parentInvites = pgTable("parent_invites", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   coachId: varchar("coach_id").notNull().references(() => users.id),
+  parentUserId: varchar("parent_user_id").references(() => users.id), // Link to authenticated parent user
   inviteCode: varchar("invite_code", { length: 50 }).notNull().unique(),
   parentName: varchar("parent_name", { length: 255 }).notNull(),
   parentEmail: varchar("parent_email", { length: 255 }).notNull(),
   studentName: varchar("student_name", { length: 255 }).notNull(),
+  studentId: varchar("student_id").notNull().references(() => students.id), // REQUIRED - each invite tied to specific student
   phoneNumber: varchar("phone_number", { length: 50 }),
-  joinedAt: timestamp("joined_at").defaultNow(),
+  claimed: boolean("claimed").default(false), // Track if invite has been used
+  claimedAt: timestamp("claimed_at"), // When invite was claimed
+  expiresAt: timestamp("expires_at"), // Optional expiration
   createdAt: timestamp("created_at").defaultNow(),
 });
 

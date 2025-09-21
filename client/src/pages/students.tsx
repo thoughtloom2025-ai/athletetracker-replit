@@ -23,7 +23,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function Students() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,10 +34,12 @@ export default function Students() {
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
-  const { data: students = [], isLoading: studentsLoading } = useQuery({
+  const { data: students = [], isLoading: studentsLoading } = useQuery<Student[]>({
     queryKey: ["/api/students"],
     enabled: isAuthenticated,
   });
+  
+  const isParent = (user as any)?.role === 'parent';
 
   const deleteMutation = useMutation({
     mutationFn: async (studentId: string) => {
@@ -176,27 +178,31 @@ export default function Students() {
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground" data-testid="text-students-title">
             Students
           </h1>
-          <p className="text-muted-foreground mt-1">Manage your athlete roster and profiles</p>
+          <p className="text-muted-foreground mt-1">
+            {isParent ? "View your child's athletic profile and progress" : "Manage your athlete roster and profiles"}
+          </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="mt-4 sm:mt-0 min-h-[44px]" data-testid="button-add-student">
-              <Plus className="h-5 w-5 mr-2" />
-              Add Student
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingStudent ? "Edit Student" : "Add New Student"}
-              </DialogTitle>
-            </DialogHeader>
-            <StudentForm 
-              student={editingStudent} 
-              onClose={handleCloseDialog}
-            />
-          </DialogContent>
-        </Dialog>
+        {!isParent && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="mt-4 sm:mt-0 min-h-[44px]" data-testid="button-add-student">
+                <Plus className="h-5 w-5 mr-2" />
+                Add Student
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingStudent ? "Edit Student" : "Add New Student"}
+                </DialogTitle>
+              </DialogHeader>
+              <StudentForm 
+                student={editingStudent} 
+                onClose={handleCloseDialog}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -252,7 +258,7 @@ export default function Students() {
                 : "Try adjusting your search terms or filters."
               }
             </p>
-            {students.length === 0 && (
+            {students.length === 0 && !isParent && (
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button data-testid="button-add-first-student">
@@ -338,22 +344,26 @@ export default function Students() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleEditStudent(student)}
-                            data-testid={`button-edit-student-${student.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteStudent(student.id)}
-                            data-testid={`button-delete-student-${student.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {!isParent && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleEditStudent(student)}
+                                data-testid={`button-edit-student-${student.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDeleteStudent(student.id)}
+                                data-testid={`button-delete-student-${student.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

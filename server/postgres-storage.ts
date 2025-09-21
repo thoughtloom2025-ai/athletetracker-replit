@@ -1,5 +1,5 @@
 // PostgreSQL storage implementation using Drizzle ORM
-import { eq, and, desc, asc, gte, lte, count, sql } from "drizzle-orm";
+import { eq, and, desc, asc, gte, lte, count, sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   users,
@@ -31,6 +31,7 @@ export interface IStorage {
   // Student operations
   createStudent(student: InsertStudent): Promise<Student>;
   getStudents(coachId: string): Promise<Student[]>;
+  getStudentsForParent(parentUserId: string): Promise<Student[]>;
   getStudent(id: string): Promise<Student | undefined>;
   updateStudent(id: string, student: Partial<InsertStudent>): Promise<Student>;
   deleteStudent(id: string): Promise<void>;
@@ -56,7 +57,8 @@ export interface IStorage {
   getCoachInviteCode(coachId: string): Promise<string>;
   addParentInvite(parentInvite: InsertParentInvite): Promise<ParentInvite>;
   getParentInvites(coachId: string): Promise<ParentInvite[]>;
-  validateInviteCode(inviteCode: string): Promise<string | null>;
+  validateInviteCode(inviteCode: string): Promise<{ coachId: string; studentId: string; inviteId: string } | null>;
+  claimInvite(inviteId: string, parentUserId: string): Promise<ParentInvite | null>;
 
   // Dashboard stats
   getDashboardStats(coachId: string): Promise<{
@@ -147,6 +149,34 @@ export class PostgresStorage implements IStorage {
       .from(students)
       .where(eq(students.coachId, coachId))
       .orderBy(desc(students.createdAt));
+  }
+
+  async getStudentsForParent(parentUserId: string): Promise<Student[]> {
+    // Get parent invite records linked to this authenticated user
+    const parentInviteRecords = await db
+      .select()
+      .from(parentInvites)
+      .where(eq(parentInvites.parentUserId, parentUserId));
+
+    if (parentInviteRecords.length === 0) {
+      return [];
+    }
+
+    // Get students by their IDs, ensuring we only return students linked to this parent
+    const studentIds = parentInviteRecords
+      .map(invite => invite.studentId)
+      .filter(id => id); // Filter out null/undefined studentIds
+
+    if (studentIds.length === 0) {
+      return [];
+    }
+
+    const studentRecords = await db
+      .select()
+      .from(students)
+      .where(inArray(students.id, studentIds));
+
+    return studentRecords;
   }
 
   async getStudent(id: string): Promise<Student | undefined> {
@@ -333,14 +363,57 @@ export class PostgresStorage implements IStorage {
       .orderBy(desc(parentInvites.joinedAt));
   }
 
-  async validateInviteCode(inviteCode: string): Promise<string | null> {
+  async validateInviteCode(inviteCode: string): Promise<{ coachId: string; studentId: string; inviteId: string } | null> {
     const result = await db
-      .select({ coachId: parentInvites.coachId })
+      .select({ 
+        coachId: parentInvites.coachId,
+        studentId: parentInvites.studentId,
+        inviteId: parentInvites.id,
+        claimed: parentInvites.claimed,
+        expiresAt: parentInvites.expiresAt
+      })
       .from(parentInvites)
       .where(eq(parentInvites.inviteCode, inviteCode))
       .limit(1);
 
-    return result.length > 0 ? result[0].coachId : null;
+    if (result.length === 0) {
+      return null; // Invite code not found
+    }
+
+    const invite = result[0];
+
+    // Check if invite is already claimed
+    if (invite.claimed) {
+      return null; // Invite already used
+    }
+
+    // Check if invite is expired (if expiration is set)
+    if (invite.expiresAt && new Date() > invite.expiresAt) {
+      return null; // Invite expired
+    }
+
+    return {
+      coachId: invite.coachId,
+      studentId: invite.studentId!,
+      inviteId: invite.inviteId
+    };
+  }
+
+  async claimInvite(inviteId: string, parentUserId: string): Promise<ParentInvite | null> {
+    const result = await db
+      .update(parentInvites)
+      .set({ 
+        claimed: true, 
+        claimedAt: new Date(),
+        parentUserId 
+      })
+      .where(and(
+        eq(parentInvites.id, inviteId),
+        eq(parentInvites.claimed, false) // Ensure it hasn't been claimed by someone else
+      ))
+      .returning();
+
+    return result.length > 0 ? result[0] : null;
   }
 
   // Dashboard stats

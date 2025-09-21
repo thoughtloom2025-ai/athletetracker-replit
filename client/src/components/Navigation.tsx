@@ -1,23 +1,36 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   BarChart3, 
   Users, 
   Calendar, 
   ClipboardList,
-  FileBarChart
+  FileBarChart,
+  UserPlus
 } from "lucide-react";
 
-const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: BarChart3, testId: "nav-dashboard" },
-  { path: "/students", label: "Students", icon: Users, testId: "nav-students" },
-  { path: "/events", label: "Events", icon: Calendar, testId: "nav-events" },
-  { path: "/attendance", label: "Attendance", icon: ClipboardList, testId: "nav-attendance" },
-  { path: "/reports", label: "Reports", icon: FileBarChart, testId: "nav-reports" },
+const getAllNavItems = () => [
+  { path: "/dashboard", label: "Dashboard", icon: BarChart3, testId: "nav-dashboard", roles: ["coach", "parent"] },
+  { path: "/students", label: "Students", icon: Users, testId: "nav-students", roles: ["coach", "parent"] },
+  { path: "/events", label: "Events", icon: Calendar, testId: "nav-events", roles: ["coach"] },
+  { path: "/attendance", label: "Attendance", icon: ClipboardList, testId: "nav-attendance", roles: ["coach"] },
+  { path: "/reports", label: "Reports", icon: FileBarChart, testId: "nav-reports", roles: ["coach"] },
+  { path: "/parent-invites", label: "Parent Invites", icon: UserPlus, testId: "nav-parent-invites", roles: ["coach"] },
 ];
 
 export function Navigation() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  
+  // Don't render navigation until user is loaded
+  if (!user) {
+    return null;
+  }
+  
+  const navItems = getAllNavItems().filter(item => 
+    item.roles.includes((user as any)?.role)
+  );
 
   return (
     <>
