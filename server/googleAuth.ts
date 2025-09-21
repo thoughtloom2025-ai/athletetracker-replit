@@ -109,13 +109,17 @@ export async function setupGoogleAuth(app: Express) {
     app.use(passport.session());
 
     // Determine callback URL based on environment
-    // First domain is production, second domain is development
     const domains = process.env.REPLIT_DOMAINS?.split(',') || [];
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? `https://${domains[0] || 'localhost'}`
-      : `https://${domains[1] || domains[0] || '0.0.0.0:5000'}`;
+    let callbackURL;
     
-    const callbackURL = `${baseUrl}/api/auth/google/callback`;
+    if (process.env.NODE_ENV === 'production') {
+      // Use the first domain for production
+      const productionDomain = domains[0];
+      callbackURL = `https://${productionDomain}/api/auth/google/callback`;
+    } else {
+      // Use development URL
+      callbackURL = `https://${domains[1] || domains[0] || '0.0.0.0:5000'}/api/auth/google/callback`;
+    }
     
     console.log("Google OAuth callback URL:", callbackURL);
 

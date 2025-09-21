@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
 import { insertStudentSchema, insertEventSchema, insertAttendanceSchema, insertPerformanceSchema, insertParentInviteSchema, students } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
@@ -16,7 +16,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  await setupAuth(app);
+  await setupGoogleAuth(app);
 
   // Health check endpoint for deployment verification
   app.get('/health', (_req, res) => {
