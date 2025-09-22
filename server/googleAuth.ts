@@ -22,6 +22,11 @@ if (!process.env.SESSION_SECRET) {
   throw new Error("Environment variable SESSION_SECRET not provided");
 }
 
+if (!process.env.REPLIT_DOMAINS) {
+  console.error("ERROR: REPLIT_DOMAINS environment variable not provided");
+  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+}
+
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   
@@ -113,12 +118,19 @@ export async function setupGoogleAuth(app: Express) {
     let callbackURL;
     
     if (process.env.NODE_ENV === 'production') {
-      // Use the first domain for production
+      // Use the first domain for production (published deployment URL)
       const productionDomain = domains[0];
+      if (!productionDomain) {
+        throw new Error("REPLIT_DOMAINS must be set for production deployment");
+      }
       callbackURL = `https://${productionDomain}/api/auth/google/callback`;
     } else {
-      // Use development URL
-      callbackURL = `https://${domains[1] || domains[0] || '0.0.0.0:5000'}/api/auth/google/callback`;
+      // Use development URL - prefer the development domain if available
+      const devDomain = domains[1] || domains[0];
+      if (!devDomain) {
+        throw new Error("REPLIT_DOMAINS must be set for development");
+      }
+      callbackURL = `https://${devDomain}/api/auth/google/callback`;
     }
     
     console.log("Google OAuth callback URL:", callbackURL);

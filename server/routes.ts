@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
+// Note: Replit Auth is available but Google OAuth is the primary authentication system
 import { insertStudentSchema, insertEventSchema, insertAttendanceSchema, insertPerformanceSchema, insertParentInviteSchema, students } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";

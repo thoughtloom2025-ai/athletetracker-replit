@@ -9,6 +9,7 @@ export default function Landing() {
 
   const handleLogin = () => {
     setIsLoading(true);
+    // Explicitly use Google OAuth login endpoint
     window.location.href = "/api/login";
   };
 
