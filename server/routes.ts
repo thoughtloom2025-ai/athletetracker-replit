@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -44,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auto-complete parent registration endpoint
   app.post('/api/auth/complete-parent-registration', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { inviteCode } = req.body;
 
       if (!inviteCode) {
@@ -89,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const stats = await storage.getDashboardStats(userId);
       res.json(stats);
     } catch (error) {
@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Student routes
   app.get('/api/students', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/students', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       // Only coaches can create students
@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get student by ID
   app.get("/api/students/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const student = await storage.getStudent(req.params.id);
 
@@ -291,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             injuryHealthIssues: row.injuryHealthIssues ? String(row.injuryHealthIssues).trim() : null,
             medicalConditions: row.medicalConditions ? String(row.medicalConditions).trim() : null,
             joiningDate: joiningDate.toISOString().split('T')[0],
-            coachId: req.user.claims.sub,
+            coachId: req.user.id,
           });
 
           importedCount++;
@@ -315,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/students/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const existingStudent = await storage.getStudent(req.params.id);
 
@@ -341,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/students/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const existingStudent = await storage.getStudent(req.params.id);
 
@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Event routes
   app.get('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const events = await storage.getEvents(userId);
       res.json(events);
     } catch (error) {
@@ -378,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       // Only coaches can create events
@@ -407,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const event = await storage.getEvent(req.params.id);
 
@@ -431,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const existingEvent = await storage.getEvent(req.params.id);
 
@@ -463,7 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const existingEvent = await storage.getEvent(req.params.id);
 
@@ -489,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Attendance routes
   app.get('/api/attendance', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { date, startDate, endDate } = req.query;
 
       let attendance;
@@ -514,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/attendance', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       // Only coaches can mark attendance
@@ -547,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Performance routes
   app.get('/api/performances/student/:studentId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const student = await storage.getStudent(req.params.studentId);
 
@@ -579,7 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/performances/event/:eventId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const event = await storage.getEvent(req.params.eventId);
 
@@ -604,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/performances', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       // Only coaches can create performance records
@@ -637,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Parent invite routes
   app.get('/api/parent-invites/code', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       // Only coaches can get invite codes
@@ -656,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/parent-invites', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const parentInvites = await storage.getParentInvites(userId);
       res.json(parentInvites);
     } catch (error) {
@@ -667,7 +667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/parent-invites', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       // Only coaches can create parent invites
@@ -701,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete parent registration after authentication
   app.post('/api/parent-invites/complete', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { inviteCode } = req.body;
 
       // Validate invite code using secure validation
