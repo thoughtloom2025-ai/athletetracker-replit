@@ -14,22 +14,17 @@ export default function ParentJoin() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    // Get invite code from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-
-    if (code) {
-      setInviteCode(code);
-      // Store invite code in localStorage for use after authentication
-      localStorage.setItem('parentInviteCode', code);
-      setIsValidCode(true);
-    } else {
-      toast({
-        title: "Error",
-        description: "Invalid invite link. Please use the link provided by your coach.",
-        variant: "destructive",
-      });
-    }
+    // Clear any stored invite codes and redirect to home
+    localStorage.removeItem('parentInviteCode');
+    toast({
+      title: "Feature Disabled",
+      description: "Parent invites are currently disabled. Please contact your coach directly.",
+      variant: "destructive",
+    });
+    // Redirect to home after showing message
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 3000);
     setIsValidating(false);
   }, [toast]);
 

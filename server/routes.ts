@@ -41,48 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auto-complete parent registration endpoint
-  app.post('/api/auth/complete-parent-registration', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { inviteCode } = req.body;
-
-      if (!inviteCode) {
-        return res.status(400).json({ message: "Invite code is required" });
-      }
-
-      // Validate invite code using secure validation
-      const inviteValidation = await storage.validateInviteCode(inviteCode);
-      if (!inviteValidation) {
-        return res.status(400).json({
-          message: "Invalid, expired, or already used invite code"
-        });
-      }
-
-      const { coachId, studentId, inviteId } = inviteValidation;
-
-      // Update user role to parent
-      await storage.updateUserRole(userId, 'parent');
-
-      // Claim the invite (this marks it as used and links to the parent)
-      const claimedInvite = await storage.claimInvite(inviteId, userId);
-      if (!claimedInvite) {
-        return res.status(400).json({
-          message: "Invite has already been claimed by another user"
-        });
-      }
-
-      res.json({
-        message: "Parent registration completed successfully",
-        studentId,
-        coachId,
-        parentInvite: claimedInvite
-      });
-    } catch (error) {
-      console.error("Error completing parent registration:", error);
-      res.status(400).json({ message: "Failed to complete parent registration" });
-    }
-  });
+  
 
   // Logout is handled by setupAuth in replitAuth.ts
 
@@ -634,108 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Parent invite routes
-  app.get('/api/parent-invites/code', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-
-      // Only coaches can get invite codes
-      if (user?.role === 'parent') {
-        return res.status(403).json({ message: "Parents cannot generate invite codes" });
-      }
-
-      // Return a base invite code - actual parent invites will have unique codes
-      const inviteCode = await storage.getCoachInviteCode(userId);
-      res.json({ inviteCode });
-    } catch (error) {
-      console.error("Error getting invite code:", error);
-      res.status(500).json({ message: "Failed to get invite code" });
-    }
-  });
-
-  app.get('/api/parent-invites', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const parentInvites = await storage.getParentInvites(userId);
-      res.json(parentInvites);
-    } catch (error) {
-      console.error("Error fetching parent invites:", error);
-      res.status(500).json({ message: "Failed to fetch parent invites" });
-    }
-  });
-
-  app.post('/api/parent-invites', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-
-      // Only coaches can create parent invites
-      if (user?.role === 'parent') {
-        return res.status(403).json({ message: "Parents cannot create parent invites" });
-      }
-
-      // If studentId is provided, verify it belongs to this coach
-      if (req.body.studentId) {
-        const student = await storage.getStudent(req.body.studentId);
-        if (!student || student.coachId !== userId) {
-          return res.status(403).json({
-            message: "Access denied - you can only create invites for your own students"
-          });
-        }
-      }
-
-      const parentInviteData = insertParentInviteSchema.parse({
-        ...req.body,
-        coachId: userId
-      });
-
-      const parentInvite = await storage.addParentInvite(parentInviteData);
-      res.json(parentInvite);
-    } catch (error) {
-      console.error("Error creating parent invite:", error);
-      res.status(400).json({ message: "Failed to create parent invite" });
-    }
-  });
-
-  // Complete parent registration after authentication
-  app.post('/api/parent-invites/complete', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { inviteCode } = req.body;
-
-      // Validate invite code using secure validation
-      const inviteValidation = await storage.validateInviteCode(inviteCode);
-      if (!inviteValidation) {
-        return res.status(400).json({
-          message: "Invalid, expired, or already used invite code"
-        });
-      }
-
-      const { coachId, studentId, inviteId } = inviteValidation;
-
-      // Update user role to parent
-      await storage.updateUserRole(userId, 'parent');
-
-      // Claim the invite (this marks it as used and links to the parent)
-      const claimedInvite = await storage.claimInvite(inviteId, userId);
-      if (!claimedInvite) {
-        return res.status(400).json({
-          message: "Invite has already been claimed by another user"
-        });
-      }
-
-      res.json({
-        message: "Parent registration completed successfully",
-        studentId,
-        coachId,
-        parentInvite: claimedInvite
-      });
-    } catch (error) {
-      console.error("Error completing parent registration:", error);
-      res.status(400).json({ message: "Failed to complete parent registration" });
-    }
-  });
+  
 
   const httpServer = createServer(app);
   return httpServer;

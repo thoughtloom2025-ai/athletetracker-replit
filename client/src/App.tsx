@@ -16,15 +16,20 @@ import Events from "@/pages/events";
 import RecordPerformance from "@/pages/record-performance";
 import Attendance from "@/pages/attendance";
 import Reports from "@/pages/reports";
-import ParentInvites from "@/pages/parent-invites";
 import ParentJoin from "@/pages/parent-join";
 import NotFound from "@/pages/not-found";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
   const { isCompleting } = useParentRegistration();
+
+  // Clear any stored invite codes on app initialization
+  useEffect(() => {
+    localStorage.removeItem('parentInviteCode');
+  }, []);
 
   if (isLoading || isCompleting) {
     return (
@@ -61,7 +66,6 @@ function Router() {
               </Route>
               <Route path="/attendance" component={Attendance} />
               <Route path="/reports" component={Reports} />
-              <Route path="/parent-invites" component={ParentInvites} />
             </Switch>
           </Layout>
         </>
