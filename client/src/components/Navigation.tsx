@@ -15,7 +15,7 @@ const getAllNavItems = () => [
   { path: "/students", label: "Students", icon: Users, testId: "nav-students", roles: ["coach", "parent"] },
   { path: "/events", label: "Events", icon: Calendar, testId: "nav-events", roles: ["coach"] },
   { path: "/attendance", label: "Attendance", icon: ClipboardList, testId: "nav-attendance", roles: ["coach"] },
-  { path: "/reports", label: "Reports", icon: FileBarChart, testId: "nav-reports", roles: ["coach"] },
+  { path: "/reports", label: "Reports", icon: FileBarChart, testId: "nav-reports", roles: ["coach"], hidden: true },
 ];
 
 export function Navigation() {
@@ -28,7 +28,7 @@ export function Navigation() {
   }
 
   const navItems = getAllNavItems().filter(item => 
-    item.roles.includes((user as any)?.role)
+    item.roles.includes((user as any)?.role) && !item.hidden
   );
 
   return (
