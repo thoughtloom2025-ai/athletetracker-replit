@@ -458,11 +458,13 @@ export class PostgresStorage implements IStorage {
     averageAttendance: number;
     personalBests: number;
   }> {
-    // Calculate week boundaries
+    // Calculate week boundaries (start at midnight Sunday, end at 23:59:59.999 Saturday)
     const now = new Date();
     const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0); // Set to midnight
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999); // Set to end of day
 
     // Total students count
     const [{ totalStudents }] = await db
