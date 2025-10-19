@@ -13,7 +13,9 @@ import {
   CalendarPlus,
   Activity,
   Download,
-  Upload
+  Upload,
+  Play,
+  CheckCircle
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +32,11 @@ export default function Dashboard() {
 
   const { data: stats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: recentActivities } = useQuery({
+    queryKey: ["/api/dashboard/recent-activities"],
     enabled: isAuthenticated,
   });
 
@@ -327,14 +334,61 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4" data-testid="activity-list">
-              {/* Empty state - no mock data */}
-              <div className="text-center py-8">
-                <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground mb-2">No Recent Activity</h3>
-                <p className="text-sm text-muted-foreground">
-                  Activity will appear here when students achieve milestones or events are completed.
-                </p>
-              </div>
+              {!recentActivities || recentActivities.length === 0 ? (
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No Recent Activity</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Activity will appear here when students are added or events are created.
+                  </p>
+                </div>
+              ) : (
+                recentActivities.map((activity: any, index: number) => {
+                  const getActivityIcon = () => {
+                    switch (activity.icon) {
+                      case 'user':
+                        return <Users className="h-4 w-4 text-primary" />;
+                      case 'calendar':
+                        return <Calendar className="h-4 w-4 text-accent" />;
+                      case 'play':
+                        return <Play className="h-4 w-4 text-chart-1" />;
+                      case 'check':
+                        return <CheckCircle className="h-4 w-4 text-secondary" />;
+                      default:
+                        return <Activity className="h-4 w-4 text-muted-foreground" />;
+                    }
+                  };
+
+                  const getTimeAgo = (timestamp: string) => {
+                    const date = new Date(timestamp);
+                    const now = new Date();
+                    const diffMs = now.getTime() - date.getTime();
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMs / 3600000);
+                    const diffDays = Math.floor(diffMs / 86400000);
+
+                    if (diffMins < 1) return 'Just now';
+                    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                    return date.toLocaleDateString();
+                  };
+
+                  return (
+                    <div key={index} className="flex items-start space-x-3 pb-3 border-b border-border last:border-0 last:pb-0">
+                      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        {getActivityIcon()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">{activity.message}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {getTimeAgo(activity.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>

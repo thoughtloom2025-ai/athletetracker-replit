@@ -57,6 +57,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recent activities
+  app.get('/api/dashboard/recent-activities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const activities = await storage.getRecentActivities(userId, limit);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching recent activities:", error);
+      res.status(500).json({ message: "Failed to fetch recent activities" });
+    }
+  });
+
   // Events count by date range
   app.get('/api/events/count', isAuthenticated, async (req: any, res) => {
     try {

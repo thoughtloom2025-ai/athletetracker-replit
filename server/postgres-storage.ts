@@ -550,6 +550,72 @@ export class PostgresStorage implements IStorage {
       personalBests: personalBests || 0,
     };
   }
+
+  async getRecentActivities(coachId: string, limit: number = 10) {
+    // Get recent students (added)
+    const recentStudents = await db
+      .select()
+      .from(students)
+      .where(eq(students.coachId, coachId))
+      .orderBy(desc(students.createdAt))
+      .limit(limit);
+
+    // Get recent events (created, started, completed)
+    const recentEvents = await db
+      .select()
+      .from(events)
+      .where(eq(events.coachId, coachId))
+      .orderBy(desc(events.updatedAt))
+      .limit(limit);
+
+    // Combine and format activities
+    const activities = [];
+
+    // Add student activities
+    for (const student of recentStudents) {
+      activities.push({
+        type: 'student_added',
+        message: `${student.name} joined the program`,
+        timestamp: student.createdAt,
+        icon: 'user',
+      });
+    }
+
+    // Add event activities
+    for (const event of recentEvents) {
+      if (event.status === 'completed') {
+        activities.push({
+          type: 'event_completed',
+          message: `${event.name} was completed`,
+          timestamp: event.updatedAt,
+          icon: 'check',
+        });
+      } else if (event.status === 'in_progress') {
+        activities.push({
+          type: 'event_started',
+          message: `${event.name} has started`,
+          timestamp: event.updatedAt,
+          icon: 'play',
+        });
+      } else {
+        activities.push({
+          type: 'event_created',
+          message: `${event.name} was created`,
+          timestamp: event.createdAt,
+          icon: 'calendar',
+        });
+      }
+    }
+
+    // Sort by timestamp and limit
+    return activities
+      .sort((a, b) => {
+        const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return timeB - timeA;
+      })
+      .slice(0, limit);
+  }
 }
 
 export const storage = new PostgresStorage();
