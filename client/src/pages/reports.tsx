@@ -269,9 +269,16 @@ export default function Reports() {
               <p className="text-sm text-muted-foreground mb-3">
                 Detailed breakdown of athletic performance across all events and students.
               </p>
-              <Button variant="outline" size="sm" data-testid="button-performance-report">
-                Generate Report
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-view-performance-report">
+                  <FileText className="h-4 w-4 mr-2" />
+                  View Report
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-download-performance-report">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+              </div>
             </div>
             
             <div className="p-4 border border-border rounded-lg">
@@ -279,9 +286,16 @@ export default function Reports() {
               <p className="text-sm text-muted-foreground mb-3">
                 Comprehensive attendance tracking with patterns and insights.
               </p>
-              <Button variant="outline" size="sm" data-testid="button-attendance-report">
-                Generate Report
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-view-attendance-report">
+                  <FileText className="h-4 w-4 mr-2" />
+                  View Report
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-download-attendance-report">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+              </div>
             </div>
             
             <div className="p-4 border border-border rounded-lg">
@@ -289,9 +303,16 @@ export default function Reports() {
               <p className="text-sm text-muted-foreground mb-3">
                 Individual student development and improvement tracking.
               </p>
-              <Button variant="outline" size="sm" data-testid="button-progress-report">
-                Generate Report
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-view-progress-report">
+                  <FileText className="h-4 w-4 mr-2" />
+                  View Report
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-download-progress-report">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+              </div>
             </div>
             
             <div className="p-4 border border-border rounded-lg">
@@ -299,9 +320,16 @@ export default function Reports() {
               <p className="text-sm text-muted-foreground mb-3">
                 Summary of all events conducted with participation statistics.
               </p>
-              <Button variant="outline" size="sm" data-testid="button-events-report">
-                Generate Report
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-view-events-report">
+                  <FileText className="h-4 w-4 mr-2" />
+                  View Report
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-download-events-report">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
