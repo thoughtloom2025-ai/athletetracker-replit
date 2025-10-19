@@ -5,9 +5,10 @@ import type { Attendance } from "@shared/schema";
 interface AttendanceCalendarProps {
   attendanceData: Attendance[];
   currentMonth: Date;
+  onDateClick?: (date: Date) => void;
 }
 
-export function AttendanceCalendar({ attendanceData, currentMonth }: AttendanceCalendarProps) {
+export function AttendanceCalendar({ attendanceData, currentMonth, onDateClick }: AttendanceCalendarProps) {
   const today = new Date();
   const currentDate = new Date(currentMonth);
   
@@ -96,10 +97,16 @@ export function AttendanceCalendar({ attendanceData, currentMonth }: AttendanceC
               key={day}
               variant="ghost"
               className={cn(
-                "relative p-3 text-center text-sm h-auto hover:bg-muted transition-colors",
+                "relative p-3 text-center text-sm h-auto hover:bg-muted transition-colors cursor-pointer",
                 todayClass ? "bg-primary text-primary-foreground font-medium" : "text-card-foreground"
               )}
               data-testid={`calendar-day-${day}`}
+              onClick={() => {
+                if (onDateClick) {
+                  const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                  onDateClick(selectedDate);
+                }
+              }}
             >
               {day}
               {indicator && (

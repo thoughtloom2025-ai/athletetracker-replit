@@ -25,6 +25,7 @@ export default function Attendance() {
   const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { present: boolean; late: boolean }>>({});
   const queryClient = useQueryClient();
 
@@ -96,25 +97,29 @@ export default function Attendance() {
     });
   };
 
-  const handleMarkAttendance = () => {
+  const handleMarkAttendance = (date?: Date) => {
+    const targetDate = date || new Date();
+    setSelectedDate(targetDate);
     setIsMarkingAttendance(true);
-    // Initialize attendance records with existing today's data
+    // Initialize attendance records with existing data for selected date
+    const dateStr = targetDate.toISOString().split('T')[0];
+    const dateAttendance = attendanceData.filter((record: any) => record.date === dateStr);
     const initialRecords: Record<string, { present: boolean; late: boolean }> = {};
     students.forEach((student: any) => {
-      const todayRecord = todayAttendance.find((record: any) => record.studentId === student.id);
+      const dateRecord = dateAttendance.find((record: any) => record.studentId === student.id);
       initialRecords[student.id] = {
-        present: todayRecord?.present ?? false,
-        late: todayRecord?.late ?? false,
+        present: dateRecord?.present ?? false,
+        late: dateRecord?.late ?? false,
       };
     });
     setAttendanceRecords(initialRecords);
   };
 
   const handleSaveAttendance = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const dateStr = selectedDate.toISOString().split('T')[0];
     const attendanceData = students.map((student: any) => ({
       studentId: student.id,
-      date: today,
+      date: dateStr,
       present: attendanceRecords[student.id]?.present ?? false,
       late: attendanceRecords[student.id]?.late ?? false,
     }));
@@ -198,7 +203,14 @@ export default function Attendance() {
           </DialogTrigger>
           <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Mark Attendance for Today</DialogTitle>
+              <DialogTitle>
+                Mark Attendance for {selectedDate.toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               {students.length > 0 ? (
@@ -304,6 +316,7 @@ export default function Attendance() {
               <AttendanceCalendar 
                 attendanceData={attendanceData}
                 currentMonth={currentMonth}
+                onDateClick={handleMarkAttendance}
               />
             </CardContent>
           </Card>
