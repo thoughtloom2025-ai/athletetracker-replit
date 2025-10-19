@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function Reports() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -65,6 +67,138 @@ export default function Reports() {
   };
 
   const { startDate, endDate } = getDateRange();
+
+  // Generate PDF Report
+  const generatePDFReport = async () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Add title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("Athletics Performance Report", pageWidth / 2, 20, { align: "center" });
+      
+      // Add report metadata
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Report Type: ${reportType.charAt(0).toUpperCase() + reportType.slice(1).replace(/([A-Z])/g, ' $1')}`, 14, 35);
+      doc.text(`Time Period: ${timeframe === "week" ? "This Week" : timeframe === "month" ? "This Month" : timeframe === "quarter" ? "This Quarter" : "This Year"}`, 14, 42);
+      doc.text(`Date Range: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`, 14, 49);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 56);
+      
+      let yPosition = 65;
+      
+      // Add summary statistics
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Summary Statistics", 14, yPosition);
+      yPosition += 10;
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const stats = [
+        ["Total Students", `${dashboardStats?.totalStudents || 0}`],
+        [`Events (${timeframe})`, `${eventsCountData?.count ?? 0}`],
+        ["Average Attendance", `${dashboardStats?.averageAttendance || 0}%`],
+        ["Personal Bests", `${dashboardStats?.personalBests || 0}`]
+      ];
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [["Metric", "Value"]],
+        body: stats,
+        theme: "grid",
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+      
+      yPosition = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Add report-specific content
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      
+      if (reportType === "performance") {
+        doc.text("Performance Analysis", 14, yPosition);
+        yPosition += 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("Detailed breakdown of athletic performance across all events and students.", 14, yPosition);
+        yPosition += 8;
+        doc.text("• Performance trends across different athletic events", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Individual student progress tracking", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Comparative analysis of results", 14, yPosition);
+      } else if (reportType === "attendance") {
+        doc.text("Attendance Summary", 14, yPosition);
+        yPosition += 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("Comprehensive attendance tracking with patterns and insights.", 14, yPosition);
+        yPosition += 8;
+        doc.text("• Attendance patterns and correlations", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Student participation rates", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Trend analysis over time", 14, yPosition);
+      } else if (reportType === "events") {
+        doc.text("Events Overview", 14, yPosition);
+        yPosition += 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("Summary of all events conducted with participation statistics.", 14, yPosition);
+        yPosition += 8;
+        doc.text("• Event completion rates", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Participation statistics", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Event type distribution", 14, yPosition);
+      } else if (reportType === "students") {
+        doc.text("Student Progress", 14, yPosition);
+        yPosition += 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("Individual student development and improvement tracking.", 14, yPosition);
+        yPosition += 8;
+        doc.text("• Individual student development", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Improvement tracking", 14, yPosition);
+        yPosition += 6;
+        doc.text("• Progress milestones", 14, yPosition);
+      }
+      
+      // Add footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `Page ${i} of ${pageCount}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: "center" }
+        );
+      }
+      
+      // Save the PDF
+      const fileName = `${reportType}_report_${timeframe}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+      toast({
+        title: "Report Generated",
+        description: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report has been downloaded successfully.`,
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Handle unauthorized access
   useEffect(() => {
@@ -159,7 +293,11 @@ export default function Reports() {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button className="min-h-[44px]" data-testid="button-generate-report">
+              <Button 
+                className="min-h-[44px]" 
+                data-testid="button-generate-report"
+                onClick={generatePDFReport}
+              >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Generate Report
               </Button>
