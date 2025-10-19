@@ -522,23 +522,24 @@ export class PostgresStorage implements IStorage {
     const monthStartStr = monthStart.toISOString().split('T')[0];
     const nowStr = now.toISOString().split('T')[0];
 
-    const attendanceRecords = await db
-      .select({
-        present: attendance.present,
+    // Get unique students who attended (were present) during the time period
+    const attendedStudents = await db
+      .selectDistinct({
+        studentId: attendance.studentId,
       })
       .from(attendance)
       .where(
         and(
           eq(attendance.coachId, coachId),
+          eq(attendance.present, true),
           gte(attendance.date, monthStartStr),
           lte(attendance.date, nowStr)
         )
       );
 
-    const totalAttendanceRecords = attendanceRecords.length;
-    const presentCount = attendanceRecords.filter(record => record.present).length;
-    const averageAttendance = totalAttendanceRecords > 0
-      ? Math.round((presentCount / totalAttendanceRecords) * 100)
+    const studentsAttendedCount = attendedStudents.length;
+    const averageAttendance = totalStudents > 0
+      ? Math.round((studentsAttendedCount / totalStudents) * 100)
       : 0;
 
     return {
