@@ -450,6 +450,21 @@ export class PostgresStorage implements IStorage {
     return result.length > 0 ? result[0] : null;
   }
 
+  // Get events count by date range
+  async getEventsCountByDateRange(coachId: string, startDate: Date, endDate: Date): Promise<number> {
+    const [{ eventCount }] = await db
+      .select({ eventCount: count() })
+      .from(events)
+      .where(
+        and(
+          eq(events.coachId, coachId),
+          gte(events.date, startDate),
+          lte(events.date, endDate)
+        )
+      );
+    return eventCount || 0;
+  }
+
   // Dashboard stats
   async getDashboardStats(coachId: string): Promise<{
     totalStudents: number;

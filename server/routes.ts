@@ -57,6 +57,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Events count by date range
+  app.get('/api/events/count', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "startDate and endDate are required" });
+      }
+
+      const count = await storage.getEventsCountByDateRange(
+        userId,
+        new Date(startDate as string),
+        new Date(endDate as string)
+      );
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching events count:", error);
+      res.status(500).json({ message: "Failed to fetch events count" });
+    }
+  });
+
   // Student routes
   app.get('/api/students', isAuthenticated, async (req: any, res) => {
     try {

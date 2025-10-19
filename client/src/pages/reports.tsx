@@ -22,6 +22,50 @@ export default function Reports() {
   const [reportType, setReportType] = useState("performance");
   const [timeframe, setTimeframe] = useState("month");
 
+  // Calculate date range based on selected timeframe
+  const getDateRange = () => {
+    const now = new Date();
+    let startDate: Date;
+    let endDate = new Date(now);
+    endDate.setHours(23, 59, 59, 999);
+
+    switch (timeframe) {
+      case "week":
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case "month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case "quarter":
+        const currentQuarter = Math.floor(now.getMonth() / 3);
+        startDate = new Date(now.getFullYear(), currentQuarter * 3, 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case "year":
+        startDate = new Date(now.getFullYear(), 0, 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+    }
+
+    return { startDate, endDate };
+  };
+
+  const { startDate, endDate } = getDateRange();
+
   // Handle unauthorized access
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -39,6 +83,18 @@ export default function Reports() {
 
   const { data: dashboardStats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: eventsCountData } = useQuery({
+    queryKey: ["/api/events/count", startDate.toISOString(), endDate.toISOString()],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/events/count?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch events count");
+      return response.json();
+    },
     enabled: isAuthenticated,
   });
 
@@ -133,9 +189,11 @@ export default function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold text-card-foreground">
-                  {dashboardStats?.eventsThisWeek || 0}
+                  {eventsCountData?.count ?? 0}
                 </p>
-                <p className="text-xs text-muted-foreground">Events This Week</p>
+                <p className="text-xs text-muted-foreground">
+                  Events This {timeframe === "week" ? "Week" : timeframe === "month" ? "Month" : timeframe === "quarter" ? "Quarter" : "Year"}
+                </p>
               </div>
               <Calendar className="h-8 w-8 text-secondary/20" />
             </div>
